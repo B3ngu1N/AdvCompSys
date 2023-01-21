@@ -20,21 +20,41 @@ Authors: Ben Haft, Thomas Petr
 
 #define SEGMENT_LENGTH 16000
 
-typedef struct compress_args
-{
-  const char *fname;
-  char *outName;
-  int cLevel;
-} compress_args_t;
 
+auto compressHelper(char* cBlock, FILE* fout)
+{
+    size_t const buffOutSize = ZSTD_compressBound(SEGMENT_LENGTH);
+    void*  const buffOut = malloc_orDie(buffOutSize);
+
+    ZSTD_CStream* const cstream = ZSTD_createCStream();
+    if (cstream==NULL) { fprintf(stderr, "ZSTD_createCStream() error \n"); exit(10); }
+    size_t const initResult = ZSTD_initCStream(cstream, 1);
+    if (ZSTD_isError(initResult)) {
+        fprintf(stderr, "ZSTD_initCStream() error : %s \n",
+                    ZSTD_getErrorName(initResult));
+        exit(11);
+    }
+
+    size_t read, toRead = SEGMENT_LENGTH * sizeof(char);
+    ZSTD_inBuffer input = { cBlock, read, 0 };
+    while (input.pos < input.size) {
+        ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
+        toRead = ZSTD_compressStream(cstream, &output , &input);   
+        if (ZSTD_isError(toRead)) {
+            fprintf(stderr, "ZSTD_compressStream() error : %s \n",
+                            ZSTD_getErrorName(toRead));
+            exit(12);
+        }
+
+        fwrite_orDie(buffOut, output.pos, fout);
+    }
+        
+}
 
 
 static void compressFile(const char* inName, const char* outName, int num_threads, int cLevel)
 {
-    FILE* const fout = fopen_orDie(outName, "wb");
-    size_t const buffOutSize = ZSTD_compressBound(SEGMENT_LENGTH);  /* can always flush a full block */
-    void*  const buffOut = malloc_orDie(buffOutSize);
-    void*  const buffIn  = malloc_orDie(SEGMENT_LENGTH * sizeof(char));
+    FILE* const fout = fopen_orDie(outName, "wb");    
 
     // open input file
     std::ifstream infile;
@@ -64,29 +84,6 @@ static void compressFile(const char* inName, const char* outName, int num_thread
         input_data[i] = buffer;
     }
 
-    // Fancy Lambda Function for Threads - Compression of 16kB Blocks
-    auto compressHelper = [](char* cBlock) {
-        ZSTD_CStream* const cstream = ZSTD_createCStream();
-        if (cstream==NULL) { fprintf(stderr, "ZSTD_createCStream() error \n"); exit(10); }
-        size_t const initResult = ZSTD_initCStream(cstream, 1);
-        if (ZSTD_isError(initResult)) {
-            fprintf(stderr, "ZSTD_initCStream() error : %s \n",
-                        ZSTD_getErrorName(initResult));
-            exit(11);
-        }
-
-        size_t read, toRead = SEGMENT_LENGTH * sizeof(char);
-        ZSTD_inBuffer input = { cBlock, read, 0 };
-        while (input.pos < input.size) {
-            ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
-            toRead = ZSTD_compressStream(cstream, &output , &input);   
-            if (ZSTD_isError(toRead)) {
-                fprintf(stderr, "ZSTD_compressStream() error : %s \n",
-                                ZSTD_getErrorName(toRead));
-                exit(12);
-            }
-        }
-    };
 
     // Determine if number of threads input is more or less than num segments
     if(num_segments < num_threads){
@@ -144,7 +141,7 @@ int main(int argc, const char** argv)
 {
     const char* const exeName = argv[0];
 
-    if (argc<=3) {
+    if (argc==2) {
         printf("Wrong Arguments\n");
         printf("%s NUM_THREADS FILE\n", exeName);
         return 1;
