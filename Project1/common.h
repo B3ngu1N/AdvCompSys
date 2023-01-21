@@ -163,6 +163,21 @@ HEADER_FUNCTION size_t fwrite_orDie(const void* buffer, size_t sizeToWrite, FILE
     exit(ERROR_fwrite);
 }
 
+/*! malloc_orDie() :
+ * Allocate memory.
+ *
+ * @return If successful this function returns a pointer to allo-
+ * cated memory.  If there is an error, this function will send that
+ * error to stderr and exit.
+ */
+HEADER_FUNCTION void* malloc_orDie(size_t size)
+{
+    void* const buff = malloc(size);
+    if (buff) return buff;
+    /* error */
+    perror("malloc");
+    exit(ERROR_malloc);
+}
 
 /*! loadFile_orDie() :
  * load file into buffer (memory).
@@ -201,7 +216,7 @@ HEADER_FUNCTION void* mallocAndLoadFile_orDie(const char* fileName, size_t* buff
 {
     size_t const fileSize = fsize_orDie(fileName);
     *bufferSize = fileSize;
-    void* const buffer = malloc(*bufferSize);
+    void* const buffer = malloc_orDie(*bufferSize);
     loadFile_orDie(fileName, buffer, *bufferSize);
     return buffer;
 }
