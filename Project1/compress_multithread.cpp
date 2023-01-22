@@ -139,26 +139,23 @@ static char* createOutFilename(const char* filename)
 
 int main(int argc, const char** argv)
 {
-    const char* const exeName = argv[0];
+    const char* const exeName = argv[0]; // Name of file to compress
 
-    if (argc==2) {
+    if (argc==2) { // Need two runtime input arguements
         printf("Wrong Arguments\n");
         printf("%s NUM_THREADS FILE\n", exeName);
         return 1;
     }
 
-    int num_threads = atoi (argv[1]);
+    int num_threads = atoi (argv[1]); // Max compression threads
     CHECK(num_threads != 0, "Must have >0 threads");
-
-    // int level = atoi (argv[2]);
-    // CHECK(level != 0, "can't parse LEVEL!");
 
     // File Names
     const char* const inFilename = argv[2];
     const char* outName = createOutFilename(inFilename);
 
+    // Run full compression
     compressFile(inFilename, outName, num_threads, 1);
 
-    
     return 0;
 }
