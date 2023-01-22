@@ -20,11 +20,20 @@ Authors: Ben Haft, Thomas Petr
 
 #define SEGMENT_LENGTH 16000
 
+typedef struct compress_args{
+    char* cBlock;
+    char* cOut;
+    FILE* outStream;
+    size_t outdata_length;
+} compress_args_t;
 
-auto compressHelper(char* cBlock, FILE* fout)
+
+void* compressHelper(void* args)
 {
-    size_t const buffOutSize = ZSTD_compressBound(SEGMENT_LENGTH);
-    void*  const buffOut = malloc_orDie(buffOutSize);
+    size_t const buffOutSize = ZSTD_CStreamOutSize(); //ZSTD_compressBound(SEGMENT_LENGTH*sizeof(char));
+    void* buffOut = malloc_orDie(buffOutSize);
+
+    ((compress_args_t*)args)->outStream = open_memstream(&(((compress_args_t*)args)->cOut), &(((compress_args_t*)args)->outdata_length));
 
     ZSTD_CStream* const cstream = ZSTD_createCStream();
     if (cstream==NULL) { fprintf(stderr, "ZSTD_createCStream() error \n"); exit(10); }
@@ -36,7 +45,7 @@ auto compressHelper(char* cBlock, FILE* fout)
     }
 
     size_t read, toRead = SEGMENT_LENGTH * sizeof(char);
-    ZSTD_inBuffer input = { cBlock, read, 0 };
+    ZSTD_inBuffer input = { ((compress_args_t*)args)->cBlock, read, 0 };
     while (input.pos < input.size) {
         ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
         toRead = ZSTD_compressStream(cstream, &output , &input);   
@@ -45,10 +54,10 @@ auto compressHelper(char* cBlock, FILE* fout)
                             ZSTD_getErrorName(toRead));
             exit(12);
         }
-
-        fwrite_orDie(buffOut, output.pos, fout);
+        fwrite_orDie(buffOut, output.pos, ((compress_args_t*)args)->outStream);
     }
-        
+    // ZSTD_freeCStream(cstream);
+    // pthread_exit(NULL);
 }
 
 
@@ -86,16 +95,25 @@ static void compressFile(const char* inName, const char* outName, int num_thread
 
 
     // Determine if number of threads input is more or less than num segments
-    if(num_segments < num_threads){
+    if(num_segments <= num_threads){
         num_threads = num_segments;
         // Multithreaded Compress Helper
         pthread_t threads[num_threads];
         int rc;
 
+        compress_args_t **all_output;
         for(int i = 0; i < num_threads; i++){
-            rc = pthread_create(&threads[i], NULL, compressHelper, input_data[i]);
+            all_output[i] = (compress_args_t*)malloc_orDie(sizeof(*all_output));
+            all_output[i]->cBlock = input_data[i];
+
+            rc = pthread_create(&threads[i], NULL, compressHelper, (void*)all_output[i]);
         }
 
+        for(int i = 0; i < num_threads; i++){
+            pthread_join(threads[i], NULL);
+            
+            fwrite_orDie(all_output[i]->cOut, all_output[i]->outdata_length, fout);
+        }
     }
     else{
         pthread_t threads[num_threads];
@@ -108,16 +126,13 @@ static void compressFile(const char* inName, const char* outName, int num_thread
         } while(num_segments > 0);
     }
 
+    // ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
+    // size_t const remainingToFlush = ZSTD_endStream(cstream, &output);   /* close frame */
+    // if (remainingToFlush) { fprintf(stderr, "not fully flushed"); exit(13); }
+    // fwrite_orDie(buffOut, output.pos, fout);
 
-/* OLD
-    pthread_t *threads = malloc_orDie(argc * sizeof(pthread_t));
-    compress_args_t *args = malloc_orDie(argc * sizeof(compress_args_t));
-
-    pthread_create (&threads[i], NULL, compressFile, &args[i]);
-
-    for (unsigned i = 0; i < argc; i++)
-      pthread_join (threads[i], NULL);
-*/
+    // ZSTD_freeCStream(cstream);
+    fclose_orDie(fout);
 
 }
 
@@ -141,13 +156,13 @@ int main(int argc, const char** argv)
 {
     const char* const exeName = argv[0];
 
-    if (argc==2) {
+    if (argc!=3) {
         printf("Wrong Arguments\n");
         printf("%s NUM_THREADS FILE\n", exeName);
         return 1;
     }
 
-    int num_threads = atoi (argv[1]);
+    int num_threads = atoi(argv[1]);
     CHECK(num_threads != 0, "Must have >0 threads");
 
     // int level = atoi (argv[2]);
@@ -155,9 +170,9 @@ int main(int argc, const char** argv)
 
     // File Names
     const char* const inFilename = argv[2];
-    const char* outName = createOutFilename(inFilename);
+    const char* outFileName = createOutFilename(inFilename);
 
-    compressFile(inFilename, outName, num_threads, 1);
+    compressFile(inFilename, outFileName, num_threads, 1);
 
     
     return 0;
