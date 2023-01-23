@@ -1,195 +1,170 @@
 /*
- * Copyright (c) Martin Liska, SUSE, Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under both the BSD-style license (found in the
- * LICENSE file in the root directory of this source tree) and the GPLv2 (found
- * in the COPYING file in the root directory of this source tree).
- * You may select, at your option, one of the above-listed licenses.
- */
+Project 1 - ZSTD Compression with Multithreading
+Dependencies: pthreads, zstd, standard libraries
 
+** Compilation must include -lzstd flag
+
+Authors: Ben Haft, Thomas Petr
+*/
+
+#include <zstd.h>
+#include <pthread.h>
+#include <iostream>
+#include <fstream>
+#include <cmath>
 
 #include <stdio.h>     // printf
 #include <stdlib.h>    // free
-#include <string.h>    // memset, strcat, strlen
-#include <zstd.h>      // presumes zstd library is installed
+#include <string.h>    // strlen, strcat, memset
 #include "common.h"    // Helper functions, CHECK(), and CHECK_ZSTD()
-#include <pthread.h>
 
-typedef struct compress_args
-{
-  const char *fname;
-  char *outName;
-  int cLevel;
-#if defined(ZSTD_STATIC_LINKING_ONLY)
-  ZSTD_threadPool *pool;
-#endif
+#define SEGMENT_LENGTH 16000
+
+typedef struct compress_args{
+    char* cBlock;
+    char* cOut;
+    FILE* outStream;
+    size_t outdata_length;
 } compress_args_t;
 
-static void *compressFile_orDie(void *data)
+
+void* compressHelper(void* args)
 {
-    const int nbThreads = 16;
+    size_t const buffOutSize = ZSTD_CStreamOutSize(); //ZSTD_compressBound(SEGMENT_LENGTH*sizeof(char));
+    void* buffOut = malloc_orDie(buffOutSize);
 
-    compress_args_t *args = (compress_args_t *)data;
-    fprintf (stderr, "Starting compression of %s with level %d, using %d threads\n", args->fname, args->cLevel, nbThreads);
-    /* Open the input and output files. */
-    FILE* const fin  = fopen_orDie(args->fname, "rb");
-    FILE* const fout = fopen_orDie(args->outName, "wb");
-    /* Create the input and output buffers.
-     * They may be any size, but we recommend using these functions to size them.
-     * Performance will only suffer significantly for very tiny buffers.
-     */
-    size_t const buffInSize = ZSTD_CStreamInSize();
-    void*  const buffIn  = malloc_orDie(buffInSize);
-    size_t const buffOutSize = ZSTD_CStreamOutSize();
-    void*  const buffOut = malloc_orDie(buffOutSize);
+    ((compress_args_t*)args)->outStream = open_memstream(&(((compress_args_t*)args)->cOut), &(((compress_args_t*)args)->outdata_length));
 
-    /* Create the context. */
-    ZSTD_CCtx* const cctx = ZSTD_createCCtx();
-    CHECK(cctx != NULL, "ZSTD_createCCtx() failed!");
-
-#if defined(ZSTD_STATIC_LINKING_ONLY)
-    size_t r = ZSTD_CCtx_refThreadPool(cctx, args->pool);
-    CHECK(r == 0, "ZSTD_CCtx_refThreadPool failed!");
-#endif
-
-    /* Set any parameters you want.
-     * Here we set the compression level, and enable the checksum.
-     */
-    CHECK_ZSTD( ZSTD_CCtx_setParameter(cctx, ZSTD_c_compressionLevel, args->cLevel) );
-    CHECK_ZSTD( ZSTD_CCtx_setParameter(cctx, ZSTD_c_checksumFlag, 1) );
-    ZSTD_CCtx_setParameter(cctx, ZSTD_c_nbWorkers, nbThreads);
-
-    /* This loop reads from the input file, compresses that entire chunk,
-     * and writes all output produced to the output file.
-     */
-    size_t const toRead = buffInSize;
-    for (;;) {
-        size_t read = fread_orDie(buffIn, toRead, fin);
-        /* Select the flush mode.
-         * If the read may not be finished (read == toRead) we use
-         * ZSTD_e_continue. If this is the last chunk, we use ZSTD_e_end.
-         * Zstd optimizes the case where the first flush mode is ZSTD_e_end,
-         * since it knows it is compressing the entire source in one pass.
-         */
-        int const lastChunk = (read < toRead);
-        ZSTD_EndDirective const mode = lastChunk ? ZSTD_e_end : ZSTD_e_continue;
-        /* Set the input buffer to what we just read.
-         * We compress until the input buffer is empty, each time flushing the
-         * output.
-         */
-        ZSTD_inBuffer input = { buffIn, read, 0 };
-        int finished;
-        do {
-            /* Compress into the output buffer and write all of the output to
-             * the file so we can reuse the buffer next iteration.
-             */
-            ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
-            size_t const remaining = ZSTD_compressStream2(cctx, &output , &input, mode);
-            CHECK_ZSTD(remaining);
-            fwrite_orDie(buffOut, output.pos, fout);
-            /* If we're on the last chunk we're finished when zstd returns 0,
-             * which means its consumed all the input AND finished the frame.
-             * Otherwise, we're finished when we've consumed all the input.
-             */
-            finished = lastChunk ? (remaining == 0) : (input.pos == input.size);
-        } while (!finished);
-        CHECK(input.pos == input.size,
-              "Impossible: zstd only returns 0 when the input is completely consumed!");
-
-        if (lastChunk) {
-            break;
-        }
+    ZSTD_CStream* const cstream = ZSTD_createCStream();
+    if (cstream==NULL) { fprintf(stderr, "ZSTD_createCStream() error \n"); exit(10); }
+    size_t const initResult = ZSTD_initCStream(cstream, 1);
+    if (ZSTD_isError(initResult)) {
+        fprintf(stderr, "ZSTD_initCStream() error : %s \n",
+                    ZSTD_getErrorName(initResult));
+        exit(11);
     }
 
-    fprintf (stderr, "Finishing compression of %s\n", args->outName);
-
-    ZSTD_freeCCtx(cctx);
-    fclose_orDie(fout);
-    fclose_orDie(fin);
-    free(buffIn);
-    free(buffOut);
-    free(args->outName);
-
-    return NULL;
+    size_t read, toRead = SEGMENT_LENGTH * sizeof(char);
+    ZSTD_inBuffer input = { ((compress_args_t*)args)->cBlock, read, 0 };
+    while (input.pos < input.size) {
+        ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
+        toRead = ZSTD_compressStream(cstream, &output , &input);   
+        if (ZSTD_isError(toRead)) {
+            fprintf(stderr, "ZSTD_compressStream() error : %s \n",
+                            ZSTD_getErrorName(toRead));
+            exit(12);
+        }
+        fwrite_orDie(buffOut, output.pos, ((compress_args_t*)args)->outStream);
+    }
+    // ZSTD_freeCStream(cstream);
+    // pthread_exit(NULL);
 }
 
 
-static char* createOutFilename_orDie(const char* filename)
+static void compressFile(const char* inName, const char* outName, int num_threads, int cLevel)
+{
+    FILE* const fout = fopen_orDie(outName, "wb");    
+
+    // open input file
+    std::ifstream infile;
+    infile.open(inName); 
+    if(!infile){
+        perror("Input File Error");
+        exit(1);
+    }
+
+    // Break input file into 16kb segments
+    // 16kB = 16000 char's
+    // Find file length
+    infile.seekg(0, infile.end);
+    int length = infile.tellg();
+    infile.seekg(0, infile.beg);
+
+    // Find number of 16kB segments, round up
+    int num_segments = ceil((float)length / (float)SEGMENT_LENGTH);
+
+    // Read data in by 16kB chunks -> array of 16kB C strings
+    char** input_data = new char*[num_segments];
+    for(int i = 0; i < num_segments; i++)
+    {
+        char* buffer = new char[SEGMENT_LENGTH];
+        infile.read(buffer, SEGMENT_LENGTH);
+
+        input_data[i] = buffer;
+    }
+
+    // Compression
+    do{
+        // Determine if number of threads input is more or less than num segments
+        if(num_segments <= num_threads){
+            num_threads = num_segments;
+        }
+        // Multithreaded Compress Helper
+        pthread_t threads[num_threads];
+        int rc;
+
+        compress_args_t **all_output;
+        for(int i = 0; i < num_threads; i++){
+            all_output[i] = (compress_args_t*)malloc_orDie(sizeof(*all_output));
+            all_output[i]->cBlock = input_data[i];
+
+            rc = pthread_create(&threads[i], NULL, compressHelper, (void*)all_output[i]);
+        }
+
+        for(int i = 0; i < num_threads; i++){
+            pthread_join(threads[i], NULL);
+            
+            fwrite_orDie(all_output[i]->cOut, all_output[i]->outdata_length, fout);
+        }
+        num_segments -= num_threads;
+    } while(num_segments > 0);
+
+    // ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
+    // size_t const remainingToFlush = ZSTD_endStream(cstream, &output);   /* close frame */
+    // if (remainingToFlush) { fprintf(stderr, "not fully flushed"); exit(13); }
+    // fwrite_orDie(buffOut, output.pos, fout);
+
+    // ZSTD_freeCStream(cstream);
+    fclose_orDie(fout);
+
+}
+
+
+/*  Creates Outfilename by appending ".zst" to the end of the C string input name
+    Done this way so that any file type can be compressed (without affecting the name)
+    Helper function from the ZSTD GitHub */
+static char* createOutFilename(const char* filename)
 {
     size_t const inL = strlen(filename);
     size_t const outL = inL + 5;
-    void* const outSpace = malloc_orDie(outL);
+    void* const outSpace = malloc(outL);
     memset(outSpace, 0, outL);
-    strcat(outSpace, filename);
-    strcat(outSpace, ".zst");
+    strcat((char*)outSpace, filename);
+    strcat((char*)outSpace, ".zst");
     return (char*)outSpace;
 }
 
-/*POOL_SIZE = USER INPUT MAX THREADS
-USER INPUT FILENAME
-
-READ IN FULL FILE
-GET FILESIZE FROM ABOVE
-
-X = FILESIZE / 16KB
-Y = ROUND UP X
-
-loop:
-	IF (Y < POOL_SIZE) THEN USE Y AS POOL_SIZE
-	ELSE USE POOL_SIZE AND SUBTRACT POOL_SIZE FROM Y
-	COMPRESS
-	ADD IN ORDER TO ZST FILE
-jump to loop*/
 
 int main(int argc, const char** argv)
 {
-    //argc: number of runtime arguments
-    //argv: array of strings of those arguments
-    const char* const exeName = argv[0];
+    const char* const exeName = argv[0]; // Name of file to compress
 
-    if (argc==2) {
-        printf("wrong arguments\n");
-        printf("usage:\n");
-        printf("%s POOL_SIZE LEVEL FILES\n", exeName);
+
+    if (argc==2) { // Need two runtime input arguements
+        printf("Wrong Arguments\n");
+        printf("%s NUM_THREADS FILE\n", exeName);
         return 1;
     }
 
-    int pool_size = atoi (argv[1]); //str -> int
-    CHECK(pool_size != 0, "can't parse POOL_SIZE!");
+    // Max number of threads (other than main thread)
+    int num_threads = atoi(argv[1]);
+    CHECK(num_threads != 0, "Must have >0 threads");
 
-    int level = 1 //compression level set to 1
+    // File Names
+    const char* const inFilename = argv[2];
+    const char* outFileName = createOutFilename(inFilename);
 
-    argc -= 3;
-    argv += 3;
-
-    pthread_t *threads = malloc_orDie(argc * sizeof(pthread_t));
-
-    //args struct, compression size calculation
-    compress_args_t *args = malloc_orDie(argc * sizeof(compress_args_t));
-
-    //Calculate 16 KB Pieces and Round up
-    //Begin loop
-
-
-    for (unsigned i = 0; i < argc; i++)
-    {
-      args[i].fname = argv[i];
-      args[i].outName = createOutFilename_orDie(args[i].fname);
-      args[i].cLevel = level;
-#if defined(ZSTD_STATIC_LINKING_ONLY)
-      args[i].pool = pool;
-#endif
-
-      pthread_create (&threads[i], NULL, compressFile_orDie, &args[i]);
-    }
-
-    for (unsigned i = 0; i < argc; i++)
-      pthread_join (threads[i], NULL);
-
-#if defined(ZSTD_STATIC_LINKING_ONLY)
-    ZSTD_freeThreadPool (pool);
-#endif
+    compressFile(inFilename, outFileName, num_threads, 1);
 
     return 0;
 }
