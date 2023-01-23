@@ -20,7 +20,7 @@ Authors: Ben Haft, Thomas Petr
 
 #define SEGMENT_LENGTH 16000
 
-typedef struct compress_args{
+typedef struct {
     char* cBlock;
     char* cOut;
     FILE* outStream;
@@ -47,6 +47,7 @@ void* compressHelper(void* args)
     size_t read, toRead = SEGMENT_LENGTH * sizeof(char);
     ZSTD_inBuffer input = { ((compress_args_t*)args)->cBlock, read, 0 };
     while (input.pos < input.size) {
+        printf("%p\n",((compress_args_t*)args)->cBlock);
         ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
         toRead = ZSTD_compressStream(cstream, &output , &input);   
         if (ZSTD_isError(toRead)) {
@@ -54,6 +55,7 @@ void* compressHelper(void* args)
                             ZSTD_getErrorName(toRead));
             exit(12);
         }
+        // printf("%p\n",buffOut);
         fwrite_orDie(buffOut, output.pos, ((compress_args_t*)args)->outStream);
     }
     // ZSTD_freeCStream(cstream);
@@ -93,7 +95,6 @@ static void compressFile(const char* inName, const char* outName, int num_thread
         input_data[i] = buffer;
     }
 
-
     // Determine if number of threads input is more or less than num segments
     if(num_segments <= num_threads){
         num_threads = num_segments;
@@ -101,12 +102,12 @@ static void compressFile(const char* inName, const char* outName, int num_thread
         pthread_t threads[num_threads];
         int rc;
 
-        compress_args_t **all_output;
+        compress_args_t **all_output = new compress_args_t*[num_threads];
         for(int i = 0; i < num_threads; i++){
-            all_output[i] = (compress_args_t*)malloc_orDie(sizeof(*all_output));
+            all_output[i] = (compress_args_t*)malloc_orDie(sizeof(compress_args_t*));
             all_output[i]->cBlock = input_data[i];
 
-            rc = pthread_create(&threads[i], NULL, compressHelper, (void*)all_output[i]);
+            rc = pthread_create(&threads[i], NULL, compressHelper, all_output[i]);
         }
 
         for(int i = 0; i < num_threads; i++){
