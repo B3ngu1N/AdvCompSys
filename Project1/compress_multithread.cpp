@@ -20,20 +20,17 @@ Authors: Ben Haft, Thomas Petr
 
 #define SEGMENT_LENGTH 16000
 
-typedef struct {
-    char* cBlock;
+typedef struct compress_args {
     char* cOut;
-    FILE* outStream;
     size_t outdata_length;
 } compress_args_t;
 
-
-void* compressHelper(void* args)
+compress_args_t* compressHelper(const char* cBlock)
 {
-    size_t const buffOutSize = ZSTD_CStreamOutSize(); //ZSTD_compressBound(SEGMENT_LENGTH*sizeof(char));
-    void* buffOut = malloc_orDie(buffOutSize);
+    size_t const buffInSize = strlen(cBlock);
+    size_t const buffOutSize = ZSTD_compressBound(buffInSize);
+    void* const buffOut = malloc_orDie(buffOutSize);
 
-    ((compress_args_t*)args)->outStream = open_memstream(&(((compress_args_t*)args)->cOut), &(((compress_args_t*)args)->outdata_length));
 
     ZSTD_CStream* const cstream = ZSTD_createCStream();
     if (cstream==NULL) { fprintf(stderr, "ZSTD_createCStream() error \n"); exit(10); }
@@ -44,22 +41,27 @@ void* compressHelper(void* args)
         exit(11);
     }
 
-    size_t read, toRead = SEGMENT_LENGTH * sizeof(char);
-    ZSTD_inBuffer input = { ((compress_args_t*)args)->cBlock, read, 0 };
-    while (input.pos < input.size) {
-        printf("%p\n",((compress_args_t*)args)->cBlock);
-        ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
-        toRead = ZSTD_compressStream(cstream, &output , &input);   
-        if (ZSTD_isError(toRead)) {
+    ZSTD_inBuffer input = { cBlock, buffInSize, 0 };
+    
+    ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
+    int chk=0;
+    chk = ZSTD_compressStream(cstream, &output , &input);  
+    if (ZSTD_isError(chk)) {
             fprintf(stderr, "ZSTD_compressStream() error : %s \n",
-                            ZSTD_getErrorName(toRead));
+                            ZSTD_getErrorName(chk));
             exit(12);
-        }
-        // printf("%p\n",buffOut);
-        fwrite_orDie(buffOut, output.pos, ((compress_args_t*)args)->outStream);
-    }
-    // ZSTD_freeCStream(cstream);
-    // pthread_exit(NULL);
+    } 
+
+    size_t const remainingToFlush = ZSTD_endStream(cstream, &output);   /* close frame */
+    if (remainingToFlush) { fprintf(stderr, "not fully flushed"); exit(13); }
+
+    compress_args_t* args;
+    args->cOut = (char*)buffOut;
+    args->outdata_length = output.pos;
+
+    ZSTD_freeCStream(cstream);
+
+    return args;
 }
 
 
@@ -102,19 +104,22 @@ static void compressFile(const char* inName, const char* outName, int num_thread
         pthread_t threads[num_threads];
         int rc;
 
-        compress_args_t **all_output = new compress_args_t*[num_threads];
+        // compress_args_t **all_output = new compress_args_t*[num_threads];
         for(int i = 0; i < num_threads; i++){
-            all_output[i] = (compress_args_t*)malloc_orDie(sizeof(compress_args_t*));
-            all_output[i]->cBlock = input_data[i];
+            // all_output[i] = (compress_args_t*)malloc_orDie(sizeof(compress_args_t*));
+            // all_output[i]->cBlock = input_data[i];
 
-            rc = pthread_create(&threads[i], NULL, compressHelper, all_output[i]);
+            compress_args_t* cargs = compressHelper2(input_data[i]);
+            // printf("%s\n", cOut);
+            // rc = pthread_create(&threads[i], NULL, compressHelper, all_output[i]);
+            fwrite_orDie(cargs->cOut, cargs->outdata_length, fout);
         }
 
-        for(int i = 0; i < num_threads; i++){
-            pthread_join(threads[i], NULL);
+        // for(int i = 0; i < num_threads; i++){
+        //     // pthread_join(threads[i], NULL);
             
-            fwrite_orDie(all_output[i]->cOut, all_output[i]->outdata_length, fout);
-        }
+        //     fwrite_orDie(all_output[i]->cOut, all_output[i]->outdata_length, fout);
+        // }
     }
     else{
         pthread_t threads[num_threads];
