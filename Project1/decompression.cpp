@@ -21,7 +21,7 @@ static void decompressFile_orDie(const char* fname)
     FILE* const fin  = fopen_orDie(fname, "rb");
     size_t const buffInSize = ZSTD_DStreamInSize();
     void*  const buffIn  = malloc_orDie(buffInSize);
-    FILE* const fout = stdout;
+    FILE* const fout = fopen_orDie("decomp_out.txt", "wb");
     size_t const buffOutSize = ZSTD_DStreamOutSize();  /* Guarantee to successfully flush at least one complete compressed block in all circumstances. */
     void*  const buffOut = malloc_orDie(buffOutSize);
 
