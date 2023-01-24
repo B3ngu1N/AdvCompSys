@@ -124,13 +124,11 @@ static void compressFile(const char* inName, const char* outName, int num_thread
         } while(num_segments > 0);
     }
 
-    // ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
-    // size_t const remainingToFlush = ZSTD_endStream(cstream, &output);   /* close frame */
-    // if (remainingToFlush) { fprintf(stderr, "not fully flushed"); exit(13); }
-    // fwrite_orDie(buffOut, output.pos, fout);
-
-    // ZSTD_freeCStream(cstream);
+    // Close the Output File
     fclose_orDie(fout);
+
+    // Free all Dynamic Memory
+    // TO BE ADDED
 
 }
 
