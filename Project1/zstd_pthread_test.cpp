@@ -99,10 +99,11 @@ static void compressFile(const char* inName, const char* outName, int num_thread
         if(num_segments <= num_threads){
             num_threads = num_segments;
         }
-        // Multithreaded Compress Helper
+        // Identify threads in use
         pthread_t threads[num_threads];
-        int rc;
 
+        // Assign data pointer to applicable 16kB segment for each thread
+        int rc;
         compress_args_t **all_output;
         for(int i = 0; i < num_threads; i++){
             all_output[i] = (compress_args_t*)malloc_orDie(sizeof(*all_output));
@@ -111,11 +112,12 @@ static void compressFile(const char* inName, const char* outName, int num_thread
             rc = pthread_create(&threads[i], NULL, compressHelper, (void*)all_output[i]);
         }
 
+        // Waits for threads to finish in order and writes to output file
         for(int i = 0; i < num_threads; i++){
             pthread_join(threads[i], NULL);
-            
             fwrite_orDie(all_output[i]->cOut, all_output[i]->outdata_length, fout);
         }
+        // Decrement number of segments left to compress
         num_segments -= num_threads;
     } while(num_segments > 0);
 
