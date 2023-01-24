@@ -99,30 +99,6 @@ static void compressFile(const char* inName, const char* outName, int num_thread
 
         // Assign data pointer to applicable 16kB segment for each thread
         int rc;
-        compress_args_t **all_output;
-        for(int i = 0; i < num_threads; i++){
-            all_output[i] = (compress_args_t*)malloc_orDie(sizeof(*all_output));
-            all_output[i]->cBlock = input_data[i];
-
-            rc = pthread_create(&threads[i], NULL, compressHelper, (void*)all_output[i]);
-        }
-
-        // Waits for threads to finish in order and writes to output file
-        for(int i = 0; i < num_threads; i++){
-            pthread_join(threads[i], NULL);
-            fwrite_orDie(all_output[i]->cOut, all_output[i]->outdata_length, fout);
-        }
-        // Decrement number of segments left to compress
-        num_segments -= num_threads;
-    }while(num_segments > 0);
-    
-    // Determine if number of threads input is more or less than num segments
-    if(num_segments <= num_threads){
-        num_threads = num_segments;
-        // Multithreaded Compress Helper
-        pthread_t threads[num_threads];
-        int rc;
-
         compress_args_t **all_output = new compress_args_t*[num_threads];
         for(int i = 0; i < num_threads; i++){
             compress_args_t* cargs = new compress_args_t;
@@ -135,22 +111,15 @@ static void compressFile(const char* inName, const char* outName, int num_thread
             rc = pthread_create(&threads[i], NULL, compressHelper, all_output[i]);
         }
 
+        // Waits for threads to finish in order and writes to output file
         for(int i = 0; i < num_threads; i++){
             pthread_join(threads[i], NULL);
-            
             fwrite_orDie(all_output[i]->cOut, all_output[i]->outdata_length, fout);
         }
-    }
-    else{
-        pthread_t threads[num_threads];
-
-        do{
-            // Multithreaded Compress Helper
-
-
-            num_segments -= num_threads;
-        } while(num_segments > 0);
-    }
+        
+        // Decrement number of segments left to compress
+        num_segments -= num_threads;
+    }while(num_segments > 0);
 
     // Close the Output File
     fclose_orDie(fout);
