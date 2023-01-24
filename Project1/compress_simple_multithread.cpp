@@ -29,9 +29,11 @@ typedef struct compress_args {
     int cLevel;
 } compress_args_t;
 
-// Helper Function - Compresses a XXkB Block/Segment (Determined by SEGMENT_LENGTH)
-// Input is a compress_args_t* struct, void output (adjusts struct's dynamically 
-// allocated memory)
+/*  
+    Helper Function - Compresses a XXkB Block/Segment (Determined by SEGMENT_LENGTH)
+    Input is a compress_args_t* struct, void output (adjusts struct's dynamically 
+    allocated memory)
+*/
 void* compressHelper(void* args)
 {
     compress_args_t* cargs = (compress_args_t*)args;
@@ -51,6 +53,10 @@ void* compressHelper(void* args)
 }
 
 
+/* 
+    Compress File Function - Multithreaded using Pthreads
+    Inputs: inFileName, outFileName, User Set # of Threads, Compression Level 1-22
+*/ 
 static void compressFile(const char* inName, const char* outName, 
                          int num_threads, int cLevel)
 {
@@ -135,9 +141,11 @@ static void compressFile(const char* inName, const char* outName,
 }
 
 
-/*  Creates Outfilename by appending ".zst" to the end of the C string input name
+/*  
+    Creates Outfilename by appending ".zst" to the end of the C string input name
     Done this way so that any file type can be compressed (without affecting the name)
-    Helper function from the ZSTD GitHub */
+    Helper function from the ZSTD GitHub 
+*/
 static char* createOutFilename(const char* filename)
 {
     size_t const inL = strlen(filename);
