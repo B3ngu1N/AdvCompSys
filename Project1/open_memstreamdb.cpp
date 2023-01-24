@@ -1,4 +1,7 @@
-// #define _GNU_SOURCE
+/*
+	This file was for testing open_memstream
+	Results of testing: It doesn't work lol
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "common.h"
