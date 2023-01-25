@@ -57,3 +57,10 @@ compressHelper:
 - Calculates size of output data
 - Tells thread to exit
 - Returns struct with input data pointer, output data pointer, output data length, and compression level
+
+**Analysis and Conclusions:**
+This laboratory exercise was assigned to teach us how to use two real-world tools in software engineering: multithreading and data compression. We successfully completed the lab by utilizing the ZSTD and pthread libraries. While programming our project, we were mindful of efficiency and allocated memory. We found a solution to read data in by 16kB chunks and assign threads to compress the data as the input file was read. This would improve efficiency when compressing large files because some threads could be compressing while the file was still being read and this is an efficient usage of memory since the entire input data was not read at one time. We also freed up dynamic memory when we saw fit. 
+
+There were many obstacles to overcome while working on this project. In the beginning, there is little documentation of the “-lzstd” flag that is necessary for compiling any program which uses the ZSTD library. One of the main errors we ran into was a faulty decompressing file. The program would only decompress the first frame of the file, so we thought our program was not iterating correctly.
+
+This lab has many real world applications. Multithreading is an efficient way to load any top of large data. Compression is built into many storage systems and databases. Therefore, pairing them together is a great exercise. We learned how to use multithreading and compression to our advantage in this lab, and are capable of applying this to programming operations in the future.
