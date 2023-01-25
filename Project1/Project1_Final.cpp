@@ -89,7 +89,6 @@ static void compressFile(const char* inName, const char* outName,
         pthread_t threads[num_threads];
         int rc;
 
-        // compress_args_t **all_output = new compress_args_t*[num_threads];
         for(int i = 0; i < num_threads; i++){
             compress_args_t* cargs = new compress_args_t;
             cargs->cBlock = new char[SEGMENT_LENGTH];
@@ -162,7 +161,7 @@ int main(int argc, const char** argv)
 {
     const char* const exeName = argv[0]; // Name of file to compress
 
-    if (argc<3 || argc>4) { // Need two runtime input arguements
+    if (argc<3 || argc>4) { // Need 3 or 4 runtime input arguements
         printf("Wrong Arguments\n");
         printf("%s NUM_THREADS FILE CLevel=1\n", exeName);
         printf("Clevel==1 by Default\n");
