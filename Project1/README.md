@@ -42,7 +42,7 @@ compressFile:
 - Loop until all segments have been processed:
   - Read 16kB of data starting from applicable address
   - Assign necessary struct variables
-    - Create thread to compress data with compressHelper()
+  - Create thread to compress data with compressHelper()
   - Write to output file in order of thread number
   - Delete dynamic memory
   - Mark processed segments
