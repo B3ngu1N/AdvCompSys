@@ -25,6 +25,7 @@
 - common.h (from zstd.h GitHub examples: https://github.com/facebook/zstd/tree/dev/examples)
 
 **Code Structure:**
+
 Main:
 - Assigns variables to runtime arguments
 - Checks that runtime arguements are correct
