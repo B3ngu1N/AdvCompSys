@@ -167,12 +167,12 @@ int main(int argc, const char** argv)
     if (argc<3 || argc>4) { // Need 3 or 4 runtime input arguements
         printf("Wrong Arguments\n");
         printf("%s NUM_THREADS FILE NUM_COMPRESSES\n", exeName);
-        printf("Clevel==1 by Default\n");
+        printf("NUM_COMPRESSES==1 by Default\n");
         return 1;
     }
 
     int cLevel = 1;
-    int num_compress = 5;
+    int num_compress = 1;
     if(argc==4) num_compress = atoi(argv[3]);
 
     // Max number of threads (other than main thread)
