@@ -13,8 +13,10 @@ Authors: Ben Haft, Thomas Petr
 #include <iostream>
 #include <fstream>
 #include <cmath>
-#include <bits/stdc++.h>
 
+#include <time.h>
+// #include <windows.h>
+#include <bits/stdc++.h>
 #include <stdio.h>     // printf
 #include <stdlib.h>    // free
 #include <string.h>    // strlen, strcat, memset
@@ -160,7 +162,7 @@ static char* createOutFilename(const char* filename)
 
 int main(int argc, const char** argv)
 {
-    time_t start, end;
+    clock_t start, end;
     const char* const exeName = argv[0]; // Name of file to compress
 
     if (argc<3 || argc>4) { // Need 3 or 4 runtime input arguements
@@ -182,16 +184,16 @@ int main(int argc, const char** argv)
     const char* outFileName = createOutFilename(inFilename);
 
     // Timer Start
-    time(&start);
+    start = clock();
 
     // Compress
     compressFile(inFilename, outFileName, num_threads, cLevel);
     
     // Timer End
-    time(&end);
+    end = clock();
 
     // Calculating total time taken by the program.
-    double time_taken = double(end - start);
+    double time_taken = double(end - start) / CLOCKS_PER_SEC;
     std::cout << "Time taken by multithreaded compression program is : " << std::fixed
          << time_taken << std::setprecision(5);
     std::cout << " sec " << std::endl;
