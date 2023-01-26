@@ -19,6 +19,8 @@
 - iostream
 - fstream
 - cmath
+- time.h
+- bits/stdc++.h
 - stdio.h
 - stdlib.h
 - string.h
@@ -30,7 +32,10 @@ Main:
 - Assigns variables to runtime arguments
 - Checks that runtime arguements are correct
 - Calls createOutFilename() function
+- Reads clock
 - Calls compressFile() function
+- Reads clock
+- Writes compression time
 
 createOutFilename:
 - Creates output file name in memory with file type ".zst"
