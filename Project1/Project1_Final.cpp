@@ -15,7 +15,6 @@ Authors: Ben Haft, Thomas Petr
 #include <cmath>
 
 #include <time.h>
-// #include <windows.h>
 #include <bits/stdc++.h>
 #include <stdio.h>     // printf
 #include <stdlib.h>    // free
