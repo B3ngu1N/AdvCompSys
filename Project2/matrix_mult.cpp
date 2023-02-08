@@ -54,7 +54,7 @@ void Matrix<float>::printMatrix()
   for(i=0; i < rows_; ++i){
     for(j=0; j < cols_; ++j){
       if (j != 0) { std::cout << " "; }
-      std::cout << std::setw(5) << std::setfill(' ') << std::setprecision(2)
+      std::cout << std::setw(7) << std::setfill(' ') << std::setprecision(3)
                 << static_cast<float>(data_[i*cols_ + j]);
     }
     std::cout << std::endl;
@@ -62,6 +62,10 @@ void Matrix<float>::printMatrix()
 }
 
 
+// This is from before, it's very incorrect and needs to be entirely rewritten
+// Also may have to change the format of the matrix to data_ to use the __m256
+// We need to make this multiply using a tiling scheme so that we can do any
+// matrix size.
 Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b) {
   Matrix<float> c(a.Rows());  // Assuming square matrix
   for (int i = 0; i < a.Rows(); i++) {
@@ -125,15 +129,17 @@ int main(int argc, const char** argv)
   start = clock();
 
   // Matrix multiplication
-  Matrix<float> C = operator*(A,B);
+  Matrix<float> C = operator*(A,B); // C = A * B
 
   // Timer End
   end = clock();
 
   // Print out final multiplied matrix
-  C.printMatrix();
-  std::cout << std::endl;
-
+  if(matrix_dim <= 20)
+  {
+    C.printMatrix();
+    std::cout << std::endl;
+  }
 
   // Calculating total time taken by the program.
   double time_taken = double(end - start) / CLOCKS_PER_SEC;
