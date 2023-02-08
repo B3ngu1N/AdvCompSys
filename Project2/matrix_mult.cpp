@@ -85,6 +85,38 @@ Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b) {
 }
 
 
+/*
+  Matrix multiplication by tiles/matrices of 8x8 32-bit floats.
+  8x 32bit float = 256 bits --> can do row X col most efficiently
+
+  Current problem is that it always pulls in 8x 32bit floats (pulls in data
+  from next row or column not in the current calculation cycle)
+*/
+Matrix<float>* matmul(const Matrix<float>* A, const Matrix<float>* B) 
+{
+  int matrix_dim = A->Rows(); 
+  Matrix<float>* C = new Matrix<float>(matrix_dim); //Assuming square matrices
+
+  // Find number of 8x8 matrices
+  int num_8x8 = ceil((double)matrix_dim/8);
+
+  for (int i = 0; i < matrix_dim; i++) {
+    for(int j = 0; j < matrix_dim; j++) {
+      __m256 sum = _mm256_setzero_ps();
+      for (int k = 0; k < matrix_dim; k++) {
+        __m256 A_ = _mm256_loadu_ps(&(*A)(i, k));
+        __m256 B_ = _mm256_loadu_ps(&(*B)(k, j));
+        sum = _mm256_add_ps(sum, _mm256_mul_ps(A_, B_));
+      }
+      float res[8];
+      _mm256_storeu_ps(res, sum);
+      (*C)(i, j) = res[0] + res[1] + res[2] + res[3] + res[4] + res[5] + res[6] + res[7];
+    }
+  }
+  return C;
+}
+
+
 int main(int argc, const char** argv)
 {
   clock_t start, end;
@@ -103,25 +135,25 @@ int main(int argc, const char** argv)
   // Values calculated with random float function
 
   int i, j;
-  Matrix<float> A = Matrix<float>(matrix_dim);
+  Matrix<float>* A = new Matrix<float>(matrix_dim);
   for( i = 0; i < matrix_dim; ++i) {
     for( j = 0;  j < matrix_dim; ++j) {
-      A.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
+      A->setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
     }
   }
-  Matrix<float> B = Matrix<float>(matrix_dim);
+  Matrix<float>* B = new Matrix<float>(matrix_dim);
   for( i = 0; i < matrix_dim; ++i) {
     for( j = 0;  j < matrix_dim; ++j) {
-      B.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
+      B->setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
     }
   }
 
   // Print out initial matrices (if dim < 20)
   if(matrix_dim <= 20)
   {
-    A.printMatrix();
+    A->printMatrix();
     std::cout << std::endl;
-    B.printMatrix();
+    B->printMatrix();
     std::cout << std::endl;
   }
 
@@ -130,14 +162,14 @@ int main(int argc, const char** argv)
   start = clock();
 
   // Matrix multiplication
-  // Matrix<float> C = A * B;
+  Matrix<float>* C = matmul(A, B);
 
   // Timer End
   end = clock();
 
   // Print out final multiplied matrix
-  // if(matrix_dim <= 20)
-  //   C.printMatrix();
+  if(matrix_dim <= 20)
+    C->printMatrix();
 
   // Calculating total time taken by the program.
   double time_taken = double(end - start) / CLOCKS_PER_SEC;
