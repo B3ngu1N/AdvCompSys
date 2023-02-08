@@ -121,18 +121,18 @@ int main(int argc, const char** argv)
     std::cout << std::endl;
   }
 
-
   // Timer Start
   start = clock();
 
   // Matrix multiplication
-  sleep(1); // temporary will be the multiplication
+  Matrix<float> C = operator*(A,B);
 
   // Timer End
   end = clock();
 
   // Print out final multiplied matrix
-
+  C.printMatrix();
+  std::cout << std::endl;
 
 
   // Calculating total time taken by the program.
