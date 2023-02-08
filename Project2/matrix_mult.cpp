@@ -88,7 +88,7 @@ Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b) {
 int main(int argc, const char** argv)
 {
   clock_t start, end;
-  const char* const exeName = argv[0]; // Name of file to compress
+  const char* const exeName = argv[0];
 
   if (argc != 2) { 
       printf("Wrong Arguments\n");
@@ -129,7 +129,7 @@ int main(int argc, const char** argv)
   start = clock();
 
   // Matrix multiplication
-  Matrix<float> C = operator*(A,B); // C = A * B
+  Matrix<float> C = A * B; // C = A * B
 
   // Timer End
   end = clock();
