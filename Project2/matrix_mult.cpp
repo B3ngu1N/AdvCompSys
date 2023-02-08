@@ -129,7 +129,7 @@ int main(int argc, const char** argv)
   start = clock();
 
   // Matrix multiplication
-  Matrix<float> C = operator*(A,B); // C = A * B
+  Matrix<float> C = A * B; // C = A * B
 
   // Timer End
   end = clock();
