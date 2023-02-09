@@ -98,16 +98,28 @@ Matrix<int16_t> operator*(const Matrix<int16_t>& a, const Matrix<int16_t>& b) {
   Matrix<int16_t> c(a.Rows());  // Assuming square matrix
   int Segs = ceil(a.Rows()/16.);
   int Remainder = a.Rows() % 16;
-  // for
-    for (int i = 0; i < Segs; i++){
-      for (int j = 0; j < 16; j++){
-        for (int k = 0; k < a.Rows()*a.Cols(); k = k + a.Cols()){
-          
+  for (int n = 0; n < a.Cols(); n++){ // Moves down column
+    for (int m = 0; m < a.Rows(); m++){ // Moves across row
+      for (int i = 0; i < Segs; i++){ // Moves to next segment
+        for (int j = 0; j < 16; j++){ // Moves across row inside segment 
+          for (int k = 0; k < a.Rows()*a.Cols(); k = k + a.Cols()){ // Moves across column
+            
+          }
         }
       }
     }
+  }
   return c;
 }
+// __m256 sum = _mm256_setzero_ps();
+// for (int k = 0; k < a.Cols(); k++) {
+//   __m256 a_ = _mm256_loadu_ps(&a(i, k));
+//   __m256 b_ = _mm256_loadu_ps(&b(k, j));
+//   sum = _mm256_add_ps(sum, _mm256_mul_ps(a_, b_));
+// }
+// float res[8];
+// _mm256_storeu_ps(res, sum);
+// c(i, j) = res[0] + res[1] + res[2] + res[3] + res[4] + res[5] + res[6] + res[7];
 
 // void nativeMatrix();
 
