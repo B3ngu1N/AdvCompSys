@@ -84,11 +84,35 @@ Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b) {
   return c;
 }
 
+template<>
+void Matrix<int16_t>::printMatrix()
+{
+  int i, j;
+  for(i=0; i < rows_; ++i){
+    for(j=0; j < cols_; ++j){
+      if (j != 0) { std::cout << " "; }
+      std::cout << std::setw(7) << std::setfill(' ')
+                << static_cast<float>(data_[i*cols_ + j]);
+    }
+    std::cout << std::endl;
+  }
+}
+
+
+// This is from before, it's very incorrect and needs to be entirely rewritten
+// Also may have to change the format of the matrix to data_ to use the __m256
+// We need to make this multiply using a tiling scheme so that we can do any
+// matrix size.
+Matrix<int16_t> operator*(const Matrix<int16_t>& a, const Matrix<int16_t>& b) {
+  Matrix<int16_t> c(a.Rows());  // Assuming square matrix
+
+  return c;
+}
 
 int main(int argc, const char** argv)
 {
   clock_t start, end;
-  const char* const exeName = argv[0];
+  const char* const exeName = argv[0]; // Name of file to compress
 
   if (argc != 2) { 
       printf("Wrong Arguments\n");
@@ -129,7 +153,7 @@ int main(int argc, const char** argv)
   start = clock();
 
   // Matrix multiplication
-  Matrix<float> C = A * B; // C = A * B
+  Matrix<float> C = operator*(A,B); // C = A * B
 
   // Timer End
   end = clock();
