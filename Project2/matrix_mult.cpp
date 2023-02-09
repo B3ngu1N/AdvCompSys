@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <cstring>
 #include <immintrin.h>
+#include <omp.h>
 
 template <typename T>
 class Matrix {
@@ -61,11 +62,6 @@ void Matrix<float>::printMatrix()
   }
 }
 
-
-// This is from before, it's very incorrect and needs to be entirely rewritten
-// Also may have to change the format of the matrix to data_ to use the __m256
-// We need to make this multiply using a tiling scheme so that we can do any
-// matrix size.
 Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b) {
   Matrix<float> c(a.Rows());  // Assuming square matrix
   for (int i = 0; i < a.Rows(); i++) {
@@ -98,23 +94,29 @@ void Matrix<int16_t>::printMatrix()
   }
 }
 
-
-// This is from before, it's very incorrect and needs to be entirely rewritten
-// Also may have to change the format of the matrix to data_ to use the __m256
-// We need to make this multiply using a tiling scheme so that we can do any
-// matrix size.
 Matrix<int16_t> operator*(const Matrix<int16_t>& a, const Matrix<int16_t>& b) {
   Matrix<int16_t> c(a.Rows());  // Assuming square matrix
-
+  int Segs = ceil(a.Rows()/16.);
+  int Remainder = a.Rows() % 16;
+  // for
+    for (int i = 0; i < Segs; i++){
+      for (int j = 0; j < 16; j++){
+        for (int k = 0; k < a.Rows()*a.Cols(); k = k + a.Cols()){
+          
+        }
+      }
+    }
   return c;
 }
 
+// void nativeMatrix();
+
 int main(int argc, const char** argv)
 {
-  clock_t start, end;
+  clock_t start1, start2, end1, end2;
   const char* const exeName = argv[0]; // Name of file to compress
 
-  if (argc != 2) { 
+  if (argc != 3) { 
       printf("Wrong Arguments\n");
       printf("%s MATRIX_DIM\n", exeName);
       return 1;
@@ -123,52 +125,109 @@ int main(int argc, const char** argv)
   // Square Matrix Dimensions
   int matrix_dim = atoi(argv[1]);
 
+  // int ? selection
+  char data_type = atoi(argv[2]);
+
+  if ((data_type != 'f') & (data_type != 'i')){
+    printf("Wrong Arguments\n");
+    printf("Input 'f' for float and 'i' for integer");
+    return 1;
+  }
+
   // Setup of Matrix A and Matrix B
   // Values calculated with random float function
+  Matrix<float> Af = Matrix<float>(matrix_dim);
+  Matrix<float> Bf = Matrix<float>(matrix_dim);
+  Matrix<float> Cf = Matrix<float>(matrix_dim);
+  Matrix<int16_t> Ai = Matrix<int16_t>(matrix_dim);
+  Matrix<int16_t> Bi = Matrix<int16_t>(matrix_dim);
+  Matrix<int16_t> Ci = Matrix<int16_t>(matrix_dim);
+
 
   int i, j;
-  Matrix<float> A = Matrix<float>(matrix_dim);
-  for( i = 0; i < matrix_dim; ++i) {
-    for( j = 0;  j < matrix_dim; ++j) {
-      A.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
+  if (data_type == 'f'){
+    Af = Matrix<float>(matrix_dim);
+    for( i = 0; i < matrix_dim; ++i) {
+      for( j = 0;  j < matrix_dim; ++j) {
+        Af.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
+      }
+    }
+    Bf = Matrix<float>(matrix_dim);
+    for( i = 0; i < matrix_dim; ++i) {
+      for( j = 0;  j < matrix_dim; ++j) {
+        Bf.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
+      }
     }
   }
-  Matrix<float> B = Matrix<float>(matrix_dim);
-  for( i = 0; i < matrix_dim; ++i) {
-    for( j = 0;  j < matrix_dim; ++j) {
-      B.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
+  else{
+    Ai = Matrix<int16_t>(matrix_dim);
+    for( i = 0; i < matrix_dim; ++i) {
+      for( j = 0;  j < matrix_dim; ++j) {
+        Ai.setVal(i, j, (int16_t)rand()); // float between 0 and 1
+      }
+    }
+    Bi = Matrix<int16_t>(matrix_dim);
+    for( i = 0; i < matrix_dim; ++i) {
+      for( j = 0;  j < matrix_dim; ++j) {
+        Bi.setVal(i, j, (int16_t)rand()); // float between 0 and 1
+      }
     }
   }
 
   // Print out initial matrices (if dim < 20)
   if(matrix_dim <= 20)
   {
-    A.printMatrix();
-    std::cout << std::endl;
-    B.printMatrix();
-    std::cout << std::endl;
+    if (data_type == 'f'){
+      Af.printMatrix();
+      std::cout << std::endl;
+      Bf.printMatrix();
+      std::cout << std::endl;
+    }
+      Ai.printMatrix();
+      std::cout << std::endl;
+      Bi.printMatrix();
+      std::cout << std::endl;
   }
 
   // Timer Start
-  start = clock();
+  start1 = clock();
 
   // Matrix multiplication
-  Matrix<float> C = operator*(A,B); // C = A * B
+  if (data_type == 'f') Cf = Af * Bf;
+  else Ci = Ai * Bi;
+
 
   // Timer End
-  end = clock();
+  end1 = clock();
+
+  // Timer Start
+  start2 = clock();
+
+  // Native Matrix multiplication
+  // nativeMatrix();
+
+  // Timer End
+  end2 = clock();
+
 
   // Print out final multiplied matrix
   if(matrix_dim <= 20)
   {
-    C.printMatrix();
+    if (data_type == 'f') Cf.printMatrix();
+    else Ci.printMatrix();
     std::cout << std::endl;
   }
 
   // Calculating total time taken by the program.
-  double time_taken = double(end - start) / CLOCKS_PER_SEC;
+  double time_taken1 = double(end1 - start1) / CLOCKS_PER_SEC;
   std::cout << "Time taken by SIMD matrix multiplication is : " << std::fixed
-        << time_taken << std::setprecision(5);
+        << time_taken1 << std::setprecision(5);
+  std::cout << " sec " << std::endl;
+
+  // Calculating total time taken by the program.
+  double time_taken2 = double(end2 - start2) / CLOCKS_PER_SEC;
+  std::cout << "Time taken by Native matrix multiplication is : " << std::fixed
+        << time_taken2 << std::setprecision(5);
   std::cout << " sec " << std::endl;
 
   return 0;
