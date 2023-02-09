@@ -88,22 +88,20 @@ void Matrix<float>::printMatrixWithPad()
 
 
 /*
-  Need to add padding to eliminate issues with 
+   Naive Matrix Multiplication Implenentation
 */
 Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b) {
   Matrix<float> c(a.Rows());  // Assuming square matrix
-  for (int i = 0; i < a.Rows(); i++) {
-    for (int j = 0; j < b.Cols(); j++) {
+  for (int i = 0; i < a.Rows(); i++) { // iterate through rows of a
+    for (int j = 0; j < b.Cols(); j++) { // iterate through columns of b
       float sum = 0.0;
-      for (int k = 0; k < a.Cols(); k++) {
-        sum += a(i, j) * b(i, j);
+      for (int k = 0; k < c.Cols(); k++) {
+        c.setVal(i, j, c(i, j)+a(i, k)*b(k, j));
       }
-      c(i, j) = sum;
     }
   }
   return c;
 }
-
 
 
 int main(int argc, const char** argv)
@@ -130,7 +128,7 @@ int main(int argc, const char** argv)
       A.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
     }
   }
-  A.printMatrixWithPad();
+  A.printMatrix();
   std::cout << std::endl;
 
   Matrix<float> B = Matrix<float>(matrix_dim);

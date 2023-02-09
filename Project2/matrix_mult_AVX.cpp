@@ -135,9 +135,6 @@ int main(int argc, const char** argv)
       A.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
     }
   }
-  A.printMatrixWithPad();
-  std::cout << std::endl;
-
   Matrix<float> B = Matrix<float>(matrix_dim);
   for( i = 0; i < matrix_dim; ++i) {
     for( j = 0;  j < matrix_dim; ++j) {
