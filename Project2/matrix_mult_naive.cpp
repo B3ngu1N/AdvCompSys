@@ -13,8 +13,7 @@
 #include <time.h>
 #include <iostream>
 #include <bits/stdc++.h>
-#include <cstdint>
-#include <cstring>
+
 
 template <typename T>
 class Matrix {

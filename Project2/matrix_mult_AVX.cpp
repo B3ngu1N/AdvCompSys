@@ -13,8 +13,6 @@
 #include <time.h>
 #include <iostream>
 #include <bits/stdc++.h>
-#include <cstdint>
-#include <cstring>
 #include <immintrin.h>
 
 
