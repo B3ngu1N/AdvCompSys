@@ -1,0 +1,2 @@
+mult_avx.o
+mult_naive.o

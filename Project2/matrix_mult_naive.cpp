@@ -64,7 +64,7 @@ void Matrix<float>::printMatrix()
   for(i=0; i < rows_; ++i){
     for(j=0; j < cols_; ++j){
       if (j != 0) { std::cout << " "; }
-      std::cout << std::setw(5) << std::setfill(' ') << std::setprecision(2)
+      std::cout << std::setw(7) << std::setfill(' ') << std::setprecision(4)
                 << static_cast<float>(data_[i*cols_padding + j]);
     }
     std::cout << std::endl;
@@ -135,13 +135,13 @@ int main(int argc, const char** argv)
   }
 
   // Print out initial matrices (if dim < 20)
-  if(matrix_dim <= 20)
-  {
-    A.printMatrix();
-    std::cout << std::endl;
-    B.printMatrix();
-    std::cout << std::endl;
-  }
+  // if(matrix_dim <= 20)
+  // {
+  //   A.printMatrix();
+  //   std::cout << std::endl;
+  //   B.printMatrix();
+  //   std::cout << std::endl;
+  // }
 
   // Timer Start
   start = clock();
@@ -153,9 +153,10 @@ int main(int argc, const char** argv)
   end = clock();
 
   // Print out final multiplied matrix
-  C.printMatrix();
-  std::cout << std::endl;
-
+  if(matrix_dim <= 20){
+    C.printMatrix();
+    std::cout << std::endl;
+  }
 
   // Calculating total time taken by the program.
   double time_taken = double(end - start) / CLOCKS_PER_SEC;
