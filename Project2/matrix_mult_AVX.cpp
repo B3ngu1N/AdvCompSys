@@ -89,23 +89,30 @@ void Matrix<float>::printMatrixWithPad()
 
 
 /*
-  Need to add padding to eliminate issues with 
+  Intel AVX Instruction-Based Matrix Multiplication
 */
 Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b) {
   Matrix<float> c(a.Rows());  // Assuming square matrix
-  for (int i = 0; i < a.Rows(); i++) {
-    for (int j = 0; j < b.Cols(); j++) {
-      __m256 sum = _mm256_setzero_ps();
-      for (int k = 0; k < a.Cols(); k++) {
-        __m256 a_ = _mm256_loadu_ps(&a(i, k));
-        __m256 b_ = _mm256_loadu_ps(&b(k, j));
-        sum = _mm256_add_ps(sum, _mm256_mul_ps(a_, b_));
-      }
-      float res[8];
-      _mm256_storeu_ps(res, sum);
-      c(i, j) = res[0] + res[1] + res[2] + res[3] + res[4] + res[5] + res[6] + res[7];
+
+  __m256 sum_current_row = _mm256_setzero_ps();
+
+  for (int i = 0; i < a.Rows(); i++) { 
+    __m256 a_ = _mm256_loadu_ps(&a(i, 0)); // Get row of 8x elements from A
+    float a_row[8]; // 8x 32bit floats in 256 bits
+    _mm256_storeu_ps(a_row, a_); // Breakup row of data into individual elements
+
+    for (int j = 0; j < b.Rows(); j++) { // Go through rows of B
+      __m256 dup_rVal = _mm256_set1_ps(a_row[j]); // duplicate value from row to all values in __m256
+
+      __m256 b_row = _mm256_loadu_ps(&b(j, 0)); // load in row of B
+
+      sum_current_row = _mm256_add_ps(sum_current_row, _mm256_mul_ps(dup_rVal, b_row));
     }
+
+    _mm256_storeu_ps(&(c(i, 0)), sum_current_row); // all results for the current row of 8x output elements
+    sum_current_row = _mm256_setzero_ps();
   }
+
   return c;
 }
 

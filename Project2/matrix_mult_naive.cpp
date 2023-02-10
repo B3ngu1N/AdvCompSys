@@ -88,7 +88,7 @@ void Matrix<float>::printMatrixWithPad()
 
 
 /*
-   Naive Matrix Multiplication Implenentation
+   Naive Matrix Multiplication Implementation
 */
 Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b) {
   Matrix<float> c(a.Rows());  // Assuming square matrix
