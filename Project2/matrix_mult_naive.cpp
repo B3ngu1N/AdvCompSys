@@ -94,9 +94,8 @@ Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b) {
   Matrix<float> c(a.Rows());  // Assuming square matrix
   for (int i = 0; i < a.Rows(); i++) { // iterate through rows of a
     for (int j = 0; j < b.Cols(); j++) { // iterate through columns of b
-      float sum = 0.0;
       for (int k = 0; k < c.Cols(); k++) {
-        c.setVal(i, j, c(i, j)+a(i, k)*b(k, j));
+        c.setVal(i, j, c(i, j)+a(i, k)*b(k, j) );
       }
     }
   }
@@ -128,9 +127,6 @@ int main(int argc, const char** argv)
       A.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
     }
   }
-  A.printMatrix();
-  std::cout << std::endl;
-
   Matrix<float> B = Matrix<float>(matrix_dim);
   for( i = 0; i < matrix_dim; ++i) {
     for( j = 0;  j < matrix_dim; ++j) {
@@ -157,7 +153,7 @@ int main(int argc, const char** argv)
   end = clock();
 
   // Print out final multiplied matrix
-  C.printMatrixWithPad();
+  C.printMatrix();
   std::cout << std::endl;
 
 
