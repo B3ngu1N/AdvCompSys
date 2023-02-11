@@ -1,7 +1,7 @@
 /*
   This program uses AVX SIMD functions to parallelize a matrix-matrix multiplication.
 
-  Compilation: g++ matrix_mult.cpp -mavx -msse -o mult_avx.o
+  Compilation: g++ matrix_mult.cpp -mavx2 -o mult_avx.o
 
   @author Thomas Petr
   @author Ben Haft
@@ -183,16 +183,22 @@ void multHelper_8x8(const Matrix<short>& a, int i_A, int j_A,
                              Matrix<short>& c)
 {
   int seg_breakup = 128/(sizeof(short)*8);
-  __m128i sum_current_row = _mm_set1_epi16(0);
+  __m128i sum_current_row = _mm_setzero_si128();
   for (int i_a = i_A; i_a < i_A+seg_breakup; i_a++) { 
-    __m128i a_ = _mm_loadu_si16(&a(i_a, j_A)); // Get row of 8x elements from A
-    float a_row[seg_breakup]; // 8x 32bit floats in 256 bits
-    _mm_storeu_si16(a_row, a_); // Breakup row of data into individual elements
+    __m128i a_ = _mm_loadu_si128((__m128i const*)&a(i_a, j_A)); // Get row of 8x elements from A
+    short a_row[seg_breakup] = {(short) ((a_[0] & 0x000000000000FFFF)),
+                                (short) ((a_[0] & 0x00000000FFFF0000)>>(8*2)),
+                                (short) ((a_[0] & 0x0000FFFF00000000)>>(8*4)),
+                                (short) ((a_[0] & 0xFFFF000000000000)>>(8*6)),
+                                (short) ((a_[1] & 0x000000000000FFFF)),
+                                (short) ((a_[1] & 0x00000000FFFF0000)>>(8*2)),
+                                (short) ((a_[1] & 0x0000FFFF00000000)>>(8*4)),
+                                (short) ((a_[1] & 0xFFFF000000000000)>>(8*6))  }; // 8x 16bit short in 128 bits
 
     for (int i_b = i_B, a_row_itr=0; i_b < i_B+seg_breakup; i_b++, a_row_itr++) { // Go through rows of B
-      __m128i dup_rVal = _mm_set1_epi16(a_row[a_row_itr]); // duplicate value from row to all values in __m256
+      __m128i dup_rVal = _mm_set1_epi16(a_row[a_row_itr]); // duplicate value from row to all values in __m128i
 
-      __m128i b_row = _mm_loadu_si16(&b(i_b, j_B)); // load in row of B
+      __m128i b_row = _mm_loadu_si128((__m128i const*)&b(i_b, j_B)); // load in row of B
 
       // Multiply every value of B row with the duplicated A row value, 
       // then add each value to the sums for the row. Each sum value is
@@ -201,15 +207,15 @@ void multHelper_8x8(const Matrix<short>& a, int i_A, int j_A,
     }
 
     // Load in the information already at C(i_a, j_B) and add new information to it
-    __m128i temp = _mm_loadu_si16(&c(i_a, j_B)); // get current result at c(i_a,j_A)
+    __m128i temp = _mm_loadu_si128((__m128i const*)&c(i_a, j_B)); // get current result at c(i_a,j_A)
     sum_current_row = _mm_add_epi16(sum_current_row, temp); // add current result to new results
-    _mm_storeu_si16(&c(i_a, j_B), sum_current_row); // all results for the current row of 8x output elements
-    sum_current_row = _mm_set1_epi16(0); // reset the sums to 0.0
+    _mm_store_si128((__m128i*)&c(i_a, j_B), sum_current_row); // all results for the current row of 8x output elements
+    sum_current_row = _mm_setzero_si128(); // reset the sums to 0
   }
 }
 
 /*
-  Intel AVX Instruction-Based Matrix Multiplication for short data-type
+  Intel SSE Instruction-Based Matrix Multiplication for short data-type
 */
 Matrix<short> operator*(const Matrix<short>& a, const Matrix<short>& b)
 {
