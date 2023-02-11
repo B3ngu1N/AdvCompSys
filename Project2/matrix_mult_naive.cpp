@@ -18,15 +18,9 @@
 template <typename T>
 class Matrix {
  public:
- // Need to add padding to allocation to allow for 0s at end of rows and columns
- // to be a multiple of 256 bits
   Matrix(int matrix_dim) : rows_(matrix_dim), cols_(matrix_dim) {
-    int segment_breakup = 256/(sizeof(T)*8);
-    int padding_dim = ceil((float)matrix_dim/segment_breakup) * segment_breakup;
-    data_ = new T[padding_dim * padding_dim];
-    memset(data_, (T)0.0, sizeof(T) * padding_dim * padding_dim);
-    rows_padding = padding_dim;
-    cols_padding = padding_dim;
+    data_ = new T[matrix_dim * matrix_dim];
+    memset(data_, (T)0.0, sizeof(T) * matrix_dim * matrix_dim);
   }
   
   ~Matrix() {
@@ -35,23 +29,20 @@ class Matrix {
 
   int Rows() const { return rows_; }
   int Cols() const { return cols_; }
-  int RowsPad() const { return rows_padding; }
-  int ColsPad() const { return cols_padding; }
+  int RowsPad() const { return rows_; }
+  int ColsPad() const { return cols_; }
   T* Data() { return data_; }
   const T* Data() const { return data_; }
 
-  T& operator()(int i, int j) { return data_[i * cols_padding + j]; }
-  const T& operator()(int i, int j) const { return data_[i * cols_padding + j]; }
+  T& operator()(int i, int j) { return data_[i * cols_ + j]; }
+  const T& operator()(int i, int j) const { return data_[i * cols_ + j]; }
 
-  void setVal(int i, int j, T val) { data_[i * cols_padding + j] = val; }
+  void setVal(int i, int j, T val) { data_[i * cols_ + j] = val; }
   void printMatrix();
-  void printMatrixWithPad();
 
  private:
   int rows_;
   int cols_;
-  int rows_padding;
-  int cols_padding;
   T* data_;
 };
 
@@ -64,21 +55,7 @@ void Matrix<float>::printMatrix()
     for(j=0; j < cols_; ++j){
       if (j != 0) { std::cout << " "; }
       std::cout << std::setw(7) << std::setfill(' ') << std::setprecision(4)
-                << static_cast<float>(data_[i*cols_padding + j]);
-    }
-    std::cout << std::endl;
-  }
-}
-
-template <>
-void Matrix<float>::printMatrixWithPad()
-{
-  int i, j;
-  for(i=0; i < rows_padding; ++i){
-    for(j=0; j < cols_padding; ++j){
-      if (j != 0) { std::cout << " "; }
-      std::cout << std::setw(5) << std::setfill(' ') << std::setprecision(2)
-                << static_cast<float>(data_[i*cols_padding + j]);
+                << static_cast<float>(data_[i*cols_ + j]);
     }
     std::cout << std::endl;
   }
@@ -133,13 +110,13 @@ int main(int argc, const char** argv)
   }
 
   // Print out initial matrices (if dim < 20)
-  // if(matrix_dim <= 20)
-  // {
-  //   A.printMatrix();
-  //   std::cout << std::endl;
-  //   B.printMatrix();
-  //   std::cout << std::endl;
-  // }
+  if(matrix_dim <= 20)
+  {
+    A.printMatrix();
+    std::cout << std::endl;
+    B.printMatrix();
+    std::cout << std::endl;
+  }
 
   // Timer Start
   start = clock();
