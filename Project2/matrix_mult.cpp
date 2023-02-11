@@ -144,7 +144,7 @@ void multHelper_8x8(const Matrix<float>& a, int i_A, int j_A,
     }
 
     // Load in the information already at C(i_a, j_B) and add new information to it
-    __m256 temp = _mm256_loadu_ps(&c(i_a, j_B)); // get current result at c(i_a,j_A)
+    __m256 temp = _mm256_loadu_ps(&c(i_a, j_B)); // get current result at c(i_a,j_B)
     sum_current_row = _mm256_add_ps(sum_current_row, temp); // add current result to new results
     _mm256_storeu_ps(&c(i_a, j_B), sum_current_row); // all results for the current row of 8x output elements
     sum_current_row = _mm256_setzero_ps(); // reset the sums to 0.0
@@ -207,7 +207,7 @@ void multHelper_8x8(const Matrix<short>& a, int i_A, int j_A,
     }
 
     // Load in the information already at C(i_a, j_B) and add new information to it
-    __m128i temp = _mm_loadu_si128((__m128i const*)&c(i_a, j_B)); // get current result at c(i_a,j_A)
+    __m128i temp = _mm_loadu_si128((__m128i const*)&c(i_a, j_B)); // get current result at c(i_a,j_B)
     sum_current_row = _mm_add_epi16(sum_current_row, temp); // add current result to new results
     _mm_store_si128((__m128i*)&c(i_a, j_B), sum_current_row); // all results for the current row of 8x output elements
     sum_current_row = _mm_setzero_si128(); // reset the sums to 0

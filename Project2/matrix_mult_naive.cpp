@@ -1,7 +1,7 @@
 /*
   This program does a naive matrix-matrix multiplication.
 
-  Compilation: g++ matrix_mult.cpp -o mult_naive.o
+  Compilation: g++ matrix_mult_naive.cpp -o mult_naive.o
 
   @author Thomas Petr
   @author Ben Haft
@@ -83,7 +83,6 @@ void Matrix<float>::printMatrixWithPad()
     std::cout << std::endl;
   }
 }
-
 
 
 /*
