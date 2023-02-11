@@ -1,7 +1,7 @@
 /*
   This program uses AVX SIMD functions to parallelize a matrix-matrix multiplication.
 
-  Compilation: g++ matrix_mult.cpp -mavx -mfma -o mult.o
+  Compilation: g++ matrix_mult.cpp -mavx -msse -o mult_avx.o
 
   @author Thomas Petr
   @author Ben Haft
@@ -12,18 +12,27 @@
 #include <stdlib.h>
 #include <time.h>
 #include <iostream>
+#include <string>
 #include <bits/stdc++.h>
-#include <cstdint>
-#include <cstring>
 #include <immintrin.h>
-#include <omp.h>
+#include <emmintrin.h>
+
 
 template <typename T>
 class Matrix {
  public:
+ // Need to add padding to allocation to allow for 0s at end of rows and columns
+ // to be a multiple of 256 bits
   Matrix(int matrix_dim) : rows_(matrix_dim), cols_(matrix_dim) {
-    data_ = new T[matrix_dim * matrix_dim];
-    memset(data_, 0, sizeof(T) * matrix_dim * matrix_dim);
+    // choose SSE or AVX depending on input type
+    int avx_or_sse = 256;
+    if(sizeof(T) < 4) avx_or_sse = 128;
+    int segment_breakup = avx_or_sse/(sizeof(T)*8);
+    int padding_dim = ceil((float)matrix_dim/segment_breakup) * segment_breakup;
+    data_ = new T[padding_dim * padding_dim];
+    memset(data_, (T)0.0, sizeof(T) * padding_dim * padding_dim);
+    rows_padding = padding_dim;
+    cols_padding = padding_dim;
   }
   
   ~Matrix() {
@@ -32,18 +41,23 @@ class Matrix {
 
   int Rows() const { return rows_; }
   int Cols() const { return cols_; }
+  int RowsPad() const { return rows_padding; }
+  int ColsPad() const { return cols_padding; }
   T* Data() { return data_; }
   const T* Data() const { return data_; }
 
-  T& operator()(int i, int j) { return data_[i * cols_ + j]; }
-  const T& operator()(int i, int j) const { return data_[i * cols_ + j]; }
+  T& operator()(int i, int j) { return data_[i * cols_padding + j]; }
+  const T& operator()(int i, int j) const { return data_[i * cols_padding + j]; }
 
-  void setVal(int i, int j, T val) { data_[i * cols_ + j] = val; }
+  void setVal(int i, int j, T val) { data_[i * cols_padding + j] = val; }
   void printMatrix();
+  void printMatrixWithPad();
 
  private:
   int rows_;
   int cols_;
+  int rows_padding;
+  int cols_padding;
   T* data_;
 };
 
@@ -55,192 +69,294 @@ void Matrix<float>::printMatrix()
   for(i=0; i < rows_; ++i){
     for(j=0; j < cols_; ++j){
       if (j != 0) { std::cout << " "; }
-      std::cout << std::setw(7) << std::setfill(' ') << std::setprecision(3)
-                << static_cast<float>(data_[i*cols_ + j]);
+      std::cout << std::setw(7) << std::setfill(' ') << std::setprecision(4)
+                << static_cast<float>(data_[i*cols_padding + j]);
     }
     std::cout << std::endl;
   }
 }
 
-Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b) {
-  Matrix<float> c(a.Rows());  // Assuming square matrix
-  for (int i = 0; i < a.Rows(); i++) {
-    for (int j = 0; j < b.Cols(); j++) {
-      __m256 sum = _mm256_setzero_ps();
-      for (int k = 0; k < a.Cols(); k++) {
-        __m256 a_ = _mm256_loadu_ps(&a(i, k));
-        __m256 b_ = _mm256_loadu_ps(&b(k, j));
-        sum = _mm256_add_ps(sum, _mm256_mul_ps(a_, b_));
-      }
-      float res[8];
-      _mm256_storeu_ps(res, sum);
-      c(i, j) = res[0] + res[1] + res[2] + res[3] + res[4] + res[5] + res[6] + res[7];
-    }
-  }
-  return c;
-}
-
-template<>
-void Matrix<int16_t>::printMatrix()
+template <>
+void Matrix<short>::printMatrix()
 {
   int i, j;
   for(i=0; i < rows_; ++i){
     for(j=0; j < cols_; ++j){
       if (j != 0) { std::cout << " "; }
-      std::cout << std::setw(7) << std::setfill(' ')
-                << static_cast<float>(data_[i*cols_ + j]);
+      std::cout << std::setw(5) << std::setfill(' ')
+                << static_cast<float>(data_[i*cols_padding + j]);
     }
     std::cout << std::endl;
   }
 }
 
-Matrix<int16_t> operator*(const Matrix<int16_t>& a, const Matrix<int16_t>& b) {
-  Matrix<int16_t> c(a.Rows());  // Assuming square matrix
-  int Segs = ceil(a.Rows()/16.);
-  int Remainder = a.Rows() % 16;
-  for (int n = 0; n < a.Cols(); n++){ // Moves down column
-    for (int m = 0; m < a.Rows(); m++){ // Moves across row
-      for (int i = 0; i < Segs; i++){ // Moves to next segment
-        for (int j = 0; j < 16; j++){ // Moves across row inside segment 
-          for (int k = 0; k < a.Rows()*a.Cols(); k = k + a.Cols()){ // Moves across column
-            
-          }
-        }
+template <>
+void Matrix<float>::printMatrixWithPad()
+{
+  int i, j;
+  for(i=0; i < rows_padding; ++i){
+    for(j=0; j < cols_padding; ++j){
+      if (j != 0) { std::cout << " "; }
+      std::cout << std::setw(5) << std::setfill(' ') << std::setprecision(2)
+                << static_cast<float>(data_[i*cols_padding + j]);
+    }
+    std::cout << std::endl;
+  }
+}
+
+template <>
+void Matrix<short>::printMatrixWithPad()
+{
+  int i, j;
+  for(i=0; i < rows_padding; ++i){
+    for(j=0; j < cols_padding; ++j){
+      if (j != 0) { std::cout << " "; }
+      std::cout << std::setw(5) << std::setfill(' ') 
+                << static_cast<float>(data_[i*cols_padding + j]);
+    }
+    std::cout << std::endl;
+  }
+}
+
+/*
+  Partial Mult Helper Function - Does 8x8 dimension float multiplication
+*/
+void multHelper_8x8(const Matrix<float>& a, int i_A, int j_A,
+                             const Matrix<float>& b, int i_B, int j_B,
+                             Matrix<float>& c)
+{
+  int seg_breakup = 256/(sizeof(float)*8);
+  __m256 sum_current_row = _mm256_setzero_ps();
+  for (int i_a = i_A; i_a < i_A+seg_breakup; i_a++) { 
+    __m256 a_ = _mm256_loadu_ps(&a(i_a, j_A)); // Get row of 8x elements from A
+    float a_row[seg_breakup]; // 8x 32bit floats in 256 bits
+    _mm256_storeu_ps(a_row, a_); // Breakup row of data into individual elements
+
+    for (int i_b = i_B, a_row_itr=0; i_b < i_B+seg_breakup; i_b++, a_row_itr++) { // Go through rows of B
+      __m256 dup_rVal = _mm256_set1_ps(a_row[a_row_itr]); // duplicate value from row to all values in __m256
+
+      __m256 b_row = _mm256_loadu_ps(&b(i_b, j_B)); // load in row of B
+
+      // Multiply every value of B row with the duplicated A row value, 
+      // then add each value to the sums for the row. Each sum value is
+      // the value to be put in the position of the 8x8 row value.
+      sum_current_row = _mm256_add_ps(sum_current_row, _mm256_mul_ps(dup_rVal, b_row));
+    }
+
+    // Load in the information already at C(i_a, j_B) and add new information to it
+    __m256 temp = _mm256_loadu_ps(&c(i_a, j_B)); // get current result at c(i_a,j_A)
+    sum_current_row = _mm256_add_ps(sum_current_row, temp); // add current result to new results
+    _mm256_storeu_ps(&c(i_a, j_B), sum_current_row); // all results for the current row of 8x output elements
+    sum_current_row = _mm256_setzero_ps(); // reset the sums to 0.0
+  }
+}
+
+/*
+  Intel AVX Instruction-Based Matrix Multiplication for float data-type
+*/
+Matrix<float> operator*(const Matrix<float>& a, const Matrix<float>& b)
+{
+  Matrix<float> c(a.Rows());  // Assuming square matrix
+
+  int seg_breakup = 256/(sizeof(float)*8);
+  int num_256xBlock = ceil((float)c.Rows()/seg_breakup); // find the number of 256 bit segments
+  
+  // Must use Tiling with 8x8 Matrices
+  // i & j correspond to tile/block of 8x8 matrix locations
+  for(int i = 0; i < num_256xBlock; i++) {
+    for(int j = 0; j < num_256xBlock; j++) {
+      for (int k = 0; k < num_256xBlock; k++) {
+        multHelper_8x8(a,i*seg_breakup,k*seg_breakup, b,k*seg_breakup,j*seg_breakup, c);
       }
     }
   }
+
   return c;
 }
-// __m256 sum = _mm256_setzero_ps();
-// for (int k = 0; k < a.Cols(); k++) {
-//   __m256 a_ = _mm256_loadu_ps(&a(i, k));
-//   __m256 b_ = _mm256_loadu_ps(&b(k, j));
-//   sum = _mm256_add_ps(sum, _mm256_mul_ps(a_, b_));
-// }
-// float res[8];
-// _mm256_storeu_ps(res, sum);
-// c(i, j) = res[0] + res[1] + res[2] + res[3] + res[4] + res[5] + res[6] + res[7];
 
-// void nativeMatrix();
+
+/*
+  Partial Mult Helper Function - Does 8x8 dimension short multiplication
+*/
+void multHelper_8x8(const Matrix<short>& a, int i_A, int j_A,
+                             const Matrix<short>& b, int i_B, int j_B,
+                             Matrix<short>& c)
+{
+  int seg_breakup = 128/(sizeof(short)*8);
+  __m128i sum_current_row = _mm_set_epi16(0,0,0,1,0,0,0,1);
+  short row_values[seg_breakup];
+  _mm_storeu_si16(row_values, sum_current_row);
+  for (int i_a = i_A; i_a < i_A+seg_breakup; i_a++) { 
+    __m128i a_ = _mm_loadu_si128((__m128i const*)&a(i_a, j_A)); // Get row of 8x elements from A
+    short a_row[seg_breakup] = {(short) ((a_[0] & 0x000000000000FFFF)),
+                                (short) ((a_[0] & 0x00000000FFFF0000)>>(8*2)),
+                                (short) ((a_[0] & 0x0000FFFF00000000)>>(8*4)),
+                                (short) ((a_[0] & 0xFFFF000000000000)>>(8*6)),
+                                (short) ((a_[1] & 0x000000000000FFFF)),
+                                (short) ((a_[1] & 0x00000000FFFF0000)>>(8*2)),
+                                (short) ((a_[1] & 0x0000FFFF00000000)>>(8*4)),
+                                (short) ((a_[1] & 0xFFFF000000000000)>>(8*6))  }; // 8x 32bit floats in 256 bits
+    //_mm_storeu_si16(a_row, a_); // Breakup row of data into individual elements
+
+    for (int i_b = i_B, a_row_itr=0; i_b < i_B+seg_breakup; i_b++, a_row_itr++) { // Go through rows of B
+      __m128i dup_rVal = _mm_set1_epi16(a_row[a_row_itr]); // duplicate value from row to all values in __m256
+
+      __m128i b_row = _mm_loadu_si16(&b(i_b, j_B)); // load in row of B
+
+      // Multiply every value of B row with the duplicated A row value, 
+      // then add each value to the sums for the row. Each sum value is
+      // the value to be put in the position of the 8x8 row value.
+      sum_current_row = _mm_add_epi16(sum_current_row, _mm_mullo_epi16(dup_rVal, b_row));
+    }
+
+    // Load in the information already at C(i_a, j_B) and add new information to it
+    __m128i temp = _mm_loadu_si16(&c(i_a, j_B)); // get current result at c(i_a,j_A)
+    sum_current_row = _mm_add_epi16(sum_current_row, temp); // add current result to new results
+    _mm_storeu_si16(&c(i_a, j_B), sum_current_row); // all results for the current row of 8x output elements
+    sum_current_row = _mm_set1_epi16(0); // reset the sums to 0.0
+  }
+}
+
+/*
+  Intel AVX Instruction-Based Matrix Multiplication for short data-type
+*/
+Matrix<short> operator*(const Matrix<short>& a, const Matrix<short>& b)
+{
+  Matrix<short> c(a.Rows());  // Assuming square matrix
+
+  int seg_breakup = 128/(sizeof(short)*8);
+  int num_128xBlock = ceil((float)c.Rows()/seg_breakup); // find the number of 128 bit segments
+  
+  // Must use Tiling with 8x8 Matrices
+  // i & j correspond to tile/block of 8x8 matrix locations
+  for(int i = 0; i < num_128xBlock; i++) {
+    for(int j = 0; j < num_128xBlock; j++) {
+      for (int k = 0; k < num_128xBlock; k++) {
+        multHelper_8x8(a,i*seg_breakup,k*seg_breakup, b,k*seg_breakup,j*seg_breakup, c);
+      }
+    }
+  }
+
+  return c;
+}
+
 
 int main(int argc, const char** argv)
 {
-  clock_t start1, start2, end1, end2;
+  clock_t start, end;
   const char* const exeName = argv[0]; // Name of file to compress
 
   if (argc != 3) { 
       printf("Wrong Arguments\n");
-      printf("%s MATRIX_DIM\n", exeName);
+      printf("%s MATRIX_DIM DATA_TYPE\n", exeName);
+      printf("DATA_TYPE = i (short) or f (float)\n");
       return 1;
   }
 
   // Square Matrix Dimensions
   int matrix_dim = atoi(argv[1]);
+  std::string argv2 = argv[2];
 
-  // int ? selection
-  char data_type = atoi(argv[2]);
+  if(argv2 == "f")
+  {
+    // Setup of Matrix A and Matrix B
+    // Values calculated with random float function
+    int i, j;
+    Matrix<float> A = Matrix<float>(matrix_dim);
+    for( i = 0; i < matrix_dim; ++i) {
+      for( j = 0;  j < matrix_dim; ++j) {
+        A.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
+      }
+    }
+    Matrix<float> B = Matrix<float>(matrix_dim);
+    for( i = 0; i < matrix_dim; ++i) {
+      for( j = 0;  j < matrix_dim; ++j) {
+        B.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
+      }
+    }
 
-  if ((data_type != 'f') & (data_type != 'i')){
-    printf("Wrong Arguments\n");
-    printf("Input 'f' for float and 'i' for integer");
-    return 1;
+    // Print out initial matrices (if dim < 20)
+    if(matrix_dim <= 20)
+    {
+      A.printMatrix();
+      std::cout << std::endl;
+      B.printMatrix();
+      std::cout << std::endl;
+    }
+
+    // Timer Start
+    start = clock();
+
+    // Matrix multiplication
+    Matrix<float> C = A * B;
+
+    // Timer End
+    end = clock();
+
+    // Print out final multiplied matrix
+    if(matrix_dim <= 20) {
+      C.printMatrix();
+      std::cout << std::endl;
+    }
+
+    // Calculating total time taken by the program.
+    double time_taken = double(end - start) / CLOCKS_PER_SEC;
+    std::cout << "Time taken by SIMD matrix multiplication is : " << std::fixed
+          << time_taken << std::setprecision(5);
+    std::cout << " sec " << std::endl;
   }
 
-  // Setup of Matrix A and Matrix B
-  // Values calculated with random float function
-  Matrix<float> Af = Matrix<float>(matrix_dim);
-  Matrix<float> Bf = Matrix<float>(matrix_dim);
-  Matrix<float> Cf = Matrix<float>(matrix_dim);
-  Matrix<int16_t> Ai = Matrix<int16_t>(matrix_dim);
-  Matrix<int16_t> Bi = Matrix<int16_t>(matrix_dim);
-  Matrix<int16_t> Ci = Matrix<int16_t>(matrix_dim);
-
-
-  int i, j;
-  if (data_type == 'f'){
-    Af = Matrix<float>(matrix_dim);
+  else if(argv2 == "i")
+  {
+    // Setup of Matrix A and Matrix B
+    // Values calculated with random float function
+    int i, j;
+    Matrix<short> A = Matrix<short>(matrix_dim); //value cap of a short is 65535
     for( i = 0; i < matrix_dim; ++i) {
       for( j = 0;  j < matrix_dim; ++j) {
-        Af.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
+        A.setVal(i, j, (short)(rand() % 10)); // float between 0 and 9
       }
     }
-    Bf = Matrix<float>(matrix_dim);
+    Matrix<short> B = Matrix<short>(matrix_dim);
     for( i = 0; i < matrix_dim; ++i) {
       for( j = 0;  j < matrix_dim; ++j) {
-        Bf.setVal(i, j, rand() / (RAND_MAX + 1.)); // float between 0 and 1
+        B.setVal(i, j, (short)(rand() % 10)); // float between 0 and 9
       }
     }
+
+    // Print out initial matrices (if dim < 20)
+    if(matrix_dim <= 20)
+    {
+      A.printMatrix();
+      std::cout << std::endl;
+      B.printMatrix();
+      std::cout << std::endl;
+    }
+
+    // Timer Start
+    start = clock();
+
+    // Matrix multiplication
+    Matrix<short> C = A * B;
+
+    // Timer End
+    end = clock();
+
+    // Print out final multiplied matrix
+    if(matrix_dim <= 20) {
+      C.printMatrix();
+      std::cout << std::endl;
+    }
+
+    // Calculating total time taken by the program.
+    double time_taken = double(end - start) / CLOCKS_PER_SEC;
+    std::cout << "Time taken by SIMD matrix multiplication is : " << std::fixed
+          << time_taken << std::setprecision(5);
+    std::cout << " sec " << std::endl;
   }
   else{
-    Ai = Matrix<int16_t>(matrix_dim);
-    for( i = 0; i < matrix_dim; ++i) {
-      for( j = 0;  j < matrix_dim; ++j) {
-        Ai.setVal(i, j, (int16_t)rand()); // float between 0 and 1
-      }
-    }
-    Bi = Matrix<int16_t>(matrix_dim);
-    for( i = 0; i < matrix_dim; ++i) {
-      for( j = 0;  j < matrix_dim; ++j) {
-        Bi.setVal(i, j, (int16_t)rand()); // float between 0 and 1
-      }
-    }
+    std::cout << "DATA_TYPE Input is Invalid - Try 'i' or 'f'" << std::endl;
   }
-
-  // Print out initial matrices (if dim < 20)
-  if(matrix_dim <= 20)
-  {
-    if (data_type == 'f'){
-      Af.printMatrix();
-      std::cout << std::endl;
-      Bf.printMatrix();
-      std::cout << std::endl;
-    }
-      Ai.printMatrix();
-      std::cout << std::endl;
-      Bi.printMatrix();
-      std::cout << std::endl;
-  }
-
-  // Timer Start
-  start1 = clock();
-
-  // Matrix multiplication
-  if (data_type == 'f') Cf = Af * Bf;
-  else Ci = Ai * Bi;
-
-
-  // Timer End
-  end1 = clock();
-
-  // Timer Start
-  start2 = clock();
-
-  // Native Matrix multiplication
-  // nativeMatrix();
-
-  // Timer End
-  end2 = clock();
-
-
-  // Print out final multiplied matrix
-  if(matrix_dim <= 20)
-  {
-    if (data_type == 'f') Cf.printMatrix();
-    else Ci.printMatrix();
-    std::cout << std::endl;
-  }
-
-  // Calculating total time taken by the program.
-  double time_taken1 = double(end1 - start1) / CLOCKS_PER_SEC;
-  std::cout << "Time taken by SIMD matrix multiplication is : " << std::fixed
-        << time_taken1 << std::setprecision(5);
-  std::cout << " sec " << std::endl;
-
-  // Calculating total time taken by the program.
-  double time_taken2 = double(end2 - start2) / CLOCKS_PER_SEC;
-  std::cout << "Time taken by Native matrix multiplication is : " << std::fixed
-        << time_taken2 << std::setprecision(5);
-  std::cout << " sec " << std::endl;
 
   return 0;
 }
