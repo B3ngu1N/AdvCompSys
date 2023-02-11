@@ -17,7 +17,16 @@
 #include <immintrin.h>
 #include <emmintrin.h>
 
+/*
+  Custom matrix datatype/object to allow for ease of implementation for both 
+  short and float datatypes without massive reusage of code.
 
+  Note: For datatypes of 2-byte length it will use SSE instructions and for 
+  datatypes of 4-byte length it will use AVX instructions. This was done to 
+  streamline the math required for 16-bit datatypes, which AVX instructions 
+  have poor utility functions for. This reduces our possible performance gain 
+  of using smaller datatypes but made it much easier to implement.
+*/
 template <typename T>
 class Matrix {
  public:
@@ -186,6 +195,10 @@ void multHelper_8x8(const Matrix<short>& a, int i_A, int j_A,
   __m128i sum_current_row = _mm_setzero_si128();
   for (int i_a = i_A; i_a < i_A+seg_breakup; i_a++) { 
     __m128i a_ = _mm_loadu_si128((__m128i const*)&a(i_a, j_A)); // Get row of 8x elements from A
+
+    // The __m128i datatype stores information very differently from the __m256.
+    // It stores the information as 2 64bit integers, so to get the information we
+    // actually desire we decided to use bit-shifting and bit-masking.
     short a_row[seg_breakup] = {(short) ((a_[0] & 0x000000000000FFFF)),
                                 (short) ((a_[0] & 0x00000000FFFF0000)>>(8*2)),
                                 (short) ((a_[0] & 0x0000FFFF00000000)>>(8*4)),
@@ -306,7 +319,7 @@ int main(int argc, const char** argv)
   else if(argv2 == "i")
   {
     // Setup of Matrix A and Matrix B
-    // Values calculated with random float function
+    // Values calculated with random function
     int i, j;
     Matrix<short> A = Matrix<short>(matrix_dim); //value cap of a short is 65535
     for( i = 0; i < matrix_dim; ++i) {
@@ -353,6 +366,11 @@ int main(int argc, const char** argv)
   }
   else{
     std::cout << "DATA_TYPE Input is Invalid - Try 'i' or 'f'" << std::endl;
+  }
+
+  if(matrix_dim > 20) {
+    std::cout << "Did not print out matrices because matrix dimension >20." 
+              << std::endl;
   }
 
   return 0;
