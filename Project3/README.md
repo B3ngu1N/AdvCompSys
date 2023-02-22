@@ -40,18 +40,25 @@ General commands used and why they were used:
 
 Important Parameters
 Data Access Size
+
 -l	Sets stride size in bytes (for everything but c2c_latency). Set to 64B and 256B in our testing.
 
 Read Only
+
 -R	Sets to fully read only.
 
 Write Only
+
 -W6	Sets to fully write only (non-temporal writes).
 
 Mixed Read-Write
+
 -Wn	Specify read to write ratio for the bandwidth generation thread in loaded_latency and max_bandwidth.
+
 -W2 	Read:Write = 2:1
+
 -W3	Read:Write = 3:1
+
 -W5	Read:Write = 1:1
 
 
@@ -62,6 +69,7 @@ A flash drive was used as a test device for random reads and writes. This was do
 Analysis was done on a variety of read vs. write intensity ratios (read-only, write-only, multiple ratios of read vs. write) and data access sizes (4KB, 32KB, 128KB). Throughput vs. latency was also analyzed.
 
 Important Command Parameters
+
 --rw		Determines analysis type (randread or randwrite).
 
 --filename 	Determines device under test (SSD or external drive in our case).
@@ -69,6 +77,7 @@ Important Command Parameters
 --bs 		Determines data access size/batch size.
 
 Random Reads
+
 fio --name=[global] --ioengine=libaio –filename=/dev/<ssd_device_name_here> --iodepth=128 --rw=randread --bs=4k --direct=1 --numjobs=16 --runtime=10 --group_reporting
 
 Random Writes
