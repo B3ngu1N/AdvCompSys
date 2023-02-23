@@ -19,8 +19,11 @@ Our experiments will change the number of requests in the queue and measure the 
 * 16.0 GB RAM @ 4800 MHz
 
 **FIO Test Environment**
-* Flash Drive
-* Need to get specs of Flash Drive
+* NVMe Device - Kioxia 512GB ([KXG70ZNV512G](https://www.harddrivebenchmark.net/hdd.php?hdd=NVMe%20KXG70ZNV512G%20NVMe%20KIOXIA%20512GB&id=29707))
+* Sequential Reads - 3868 MB/s
+* Sequential Writes - 2798 MB/s
+* Random Seek Read Write (IOPS 32KQD20) - 2111 MB/s
+* IOPS 4KQD1 - 86 MB/s
 
 **Software Environment**
 * WSL2 - Ubuntu 22.04 LTS
