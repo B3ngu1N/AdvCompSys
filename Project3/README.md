@@ -79,16 +79,41 @@ Analysis was done on a variety of read vs. write intensity ratios (read-only, wr
 
 `--bs` &rarr; Determines data access size/batch size.
 
-**Random Reads:**
+`--numjobs` &rarr; Sets the number of jobs done.
 
+`--group_reporting` &rarr; Allows for summarized reporting of all jobs done.
+
+`--ramp_time` &rarr; FIO will run the specified workload for this amount of time before logging any performance numbers. Useful for letting performance settle before logging results, thus minimizing the runtime required for stable results.
+
+`--direct` &rarr;	Boolean setting that determines unbuffered or buffered I/O.
+
+`--size` &rarr; Size of the test file being written or read from.
+
+
+**Random Writes**
 ```shell
-fio --name=[global] --ioengine=libaio –filename=/dev/<ssd_device_name_here> --iodepth=128 --rw=randread --bs=4k --direct=1 --numjobs=16 --runtime=10 --group_reporting
+sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16 --size=512k --readwrite=randwrite --ramp_time=4 --group_reporting
 ```
 
-**Random Writes:**
+**Random Reads**
+```shell
+sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16 --size=512k --readwrite=randread --ramp_time=4 --group_reporting
+```
 
+**Sequential write test for throughput**
+```shell
+sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=8 --size=512k --readwrite=write --ramp_time=4 --group_reporting
+```
+
+**Sequential Read test for throughput**
+```shell
+sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=8  --size=512k --readwrite=read --ramp_time=4 --group_reporting
+```
+[FIO Documentation](https://fio.readthedocs.io/en/latest/)
+
+ 
 [Useful FIO Guide Video](https://www.youtube.com/watch?v=RnqnogK5ceo&ab_channel=TechnicalBytes)
-
+[Useful FIO Forum Post](https://forums.lawrencesystems.com/t/linux-benchmarking-with-fio/11122)
 
 ## Results:
 
