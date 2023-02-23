@@ -1,7 +1,6 @@
-# Project 3
-## **Memory and Storage Performance Profiling**
+# Project 3: Memory and Storage Performance Profiling**
 
-### **Background:**
+## **Background:**
 
 The goal of this project is to develop a deeper understanding of modern memory and storage applications. To explore this topic, we will be using Intel's [Memory Latency Checker](https://www.intel.com/content/www/us/en/developer/articles/tool/intelr-memory-latency-checker.html) for Cache and Memory, and [Flexible IO Tester](https://github.com/axboe/fio) for Storage. Since our objecitve is to denote and analyze the performance of memory and storage, we will identify how data access throughput affects latency.
 
@@ -12,7 +11,7 @@ $$ L_{queue} = { μ^2 \over  1 - μ } $$
 Our experiments will change the number of requests in the queue and measure the latency. Latency is proportionate to utilization. Therefore, if we consider our storage devices to be psuedo-servers, we should be able to derive the referenced equation with a certain leading factor.
 
 
-### **Experimental Environment & Settings:**
+## **Experimental Environment & Settings:**
 
 Test System: Dell XPS-15 9520
 * Intel i7-12700H @ 2.3GHz
@@ -26,40 +25,41 @@ FIO Test Environment
 Software Environment
 * WSL2 - Ubuntu 22.04 LTS
 
-### Intel MLC Commands Used
+## Intel MLC Commands Used
 
-General commands used and why they were used:
+### General commands used and why they were used:
 
---loaded_latency &rarr; Latencies at different bandwidth points.
+`--loaded_latency` &rarr; Latencies at different bandwidth points.
 
---peak_injection_bandwidth &rarr; Peak injection memory bandwidth is measured (with all accesses to local memory) for requests with varying amounts of reads and writes (each core generating requests as fast as possible).
+`--peak_injection_bandwidth` &rarr; Peak injection memory bandwidth is measured (with all accesses to local memory) for requests with varying amounts of reads and writes (each core generating requests as fast as possible).
 
---max_bandwidth &rarr; Peak injection bandwidth tests are done multiple times and the max bandwidth possible is found.
+`--max_bandwidth` &rarr; Peak injection bandwidth tests are done multiple times and the max bandwidth possible is found.
 
---c2c_latency &rarr; Latency measurement of cache-to-cache transfers in the processor.
+`--c2c_latency` &rarr; Latency measurement of cache-to-cache transfers in the processor.
 
-Important Parameters
-Data Access Size
+### Important Parameters
 
--l	Sets stride size in bytes (for everything but c2c_latency). Set to 64B and 256B in our testing.
+**Data Access Size:**
 
-Read Only
+`-l` &rarr; Sets stride size in bytes (for everything but c2c_latency). Set to 64B and 256B in our testing.
 
--R	Sets to fully read only.
+**Read Only:**
 
-Write Only
+`-R` &rarr; Sets to fully read only.
 
--W6	Sets to fully write only (non-temporal writes).
+**Write Only:**
 
-Mixed Read-Write
+`-W6`  &rarr; Sets to fully write only (non-temporal writes).
 
--Wn	Specify read to write ratio for the bandwidth generation thread in loaded_latency and max_bandwidth.
+**Mixed Read-Write:**
 
--W2 	Read:Write = 2:1
+`-Wn` &rarr; Specify read to write ratio for the bandwidth generation thread in loaded_latency and max_bandwidth.
 
--W3	Read:Write = 3:1
+`-W2` &rarr; Read:Write = 2:1
 
--W5	Read:Write = 1:1
+`-W3` &rarr; Read:Write = 3:1
+
+`-W5` &rarr; Read:Write = 1:1
 
 
 ### FIO Commands Used & Overview
@@ -68,19 +68,21 @@ A flash drive was used as a test device for random reads and writes. This was do
 
 Analysis was done on a variety of read vs. write intensity ratios (read-only, write-only, multiple ratios of read vs. write) and data access sizes (4KB, 32KB, 128KB). Throughput vs. latency was also analyzed.
 
-Important Command Parameters
+**Important Command Parameters:**
 
---rw		Determines analysis type (randread or randwrite).
+`--rw` &rarr; Determines analysis type (randread or randwrite).
 
---filename 	Determines device under test (SSD or external drive in our case).
+`--filename` &rarr; Determines device under test (SSD or external drive in our case).
 
---bs 		Determines data access size/batch size.
+`--bs` &rarr; Determines data access size/batch size.
 
-Random Reads
+**Random Reads:**
 
+```shell
 fio --name=[global] --ioengine=libaio –filename=/dev/<ssd_device_name_here> --iodepth=128 --rw=randread --bs=4k --direct=1 --numjobs=16 --runtime=10 --group_reporting
+```
 
-Random Writes
+**Random Writes:**
 
 [Useful FIO Guide Video](https://www.youtube.com/watch?v=RnqnogK5ceo&ab_channel=TechnicalBytes)
 
