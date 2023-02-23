@@ -92,27 +92,28 @@ Analysis was done on a variety of read vs. write intensity ratios (read-only, wr
 
 **Random Writes**
 ```shell
-sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16 --size=512k --readwrite=randwrite --ramp_time=4 --group_reporting
+sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16 --size=512M --readwrite=randwrite --ramp_time=4 --group_reporting
 ```
 
 **Random Reads**
 ```shell
-sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16 --size=512k --readwrite=randread --ramp_time=4 --group_reporting
+sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16 --size=512M --readwrite=randread --ramp_time=4 --group_reporting
 ```
 
 **Sequential write test for throughput**
 ```shell
-sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=8 --size=512k --readwrite=write --ramp_time=4 --group_reporting
+sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16 --size=512M --readwrite=write --ramp_time=4 --group_reporting
 ```
 
 **Sequential Read test for throughput**
 ```shell
-sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=8  --size=512k --readwrite=read --ramp_time=4 --group_reporting
+sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16  --size=512M --readwrite=read --ramp_time=4 --group_reporting
 ```
-[FIO Documentation](https://fio.readthedocs.io/en/latest/)
 
+[FIO Documentation](https://fio.readthedocs.io/en/latest/)
  
 [Useful FIO Guide Video](https://www.youtube.com/watch?v=RnqnogK5ceo&ab_channel=TechnicalBytes)
+
 [Useful FIO Forum Post](https://forums.lawrencesystems.com/t/linux-benchmarking-with-fio/11122)
 
 ## Results:
