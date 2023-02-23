@@ -67,7 +67,7 @@ Our experiments will change the number of requests in the queue and measure the 
 
 ## FIO Commands & Settings
 
-A flash drive was used as a test device for random reads and writes. This was done due to the fact that our working environment was WSL2 (Ubuntu) within Windows and it does not recognize partitions on an internal drive (just sees all memory as Virtual Memory). As a result, using an external drive was the best workaround that prevents issues with overwriting OS information during random write performance analysis with FIO.
+A partition was made to safely do testing with FIO testing within the NVMe SSD device. 
 
 Analysis was done on a variety of read vs. write intensity ratios (read-only, write-only, multiple ratios of read vs. write) and data access sizes (4KB, 32KB, 128KB). Throughput vs. latency was also analyzed.
 
