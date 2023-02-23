@@ -11,21 +11,21 @@ $$ L_{queue} = { μ^2 \over  1 - μ } $$
 Our experiments will change the number of requests in the queue and measure the latency. Latency is proportionate to utilization. Therefore, if we consider our storage devices to be psuedo-servers, we should be able to derive the referenced equation with a certain leading factor.
 
 
-## Experimental Environment & Settings:
+## Experimental Environment:
 
-Test System: Dell XPS-15 9520
+**Test System:** Dell XPS-15 9520
 * Intel i7-12700H @ 2.3GHz
   - L1: 1.2MB, L2: 11.5MB, L3: 24MB
 * 16.0 GB RAM @ 4800 MHz
 
-FIO Test Environment
+**FIO Test Environment**
 * Flash Drive
 * Need to get specs of Flash Drive
 
-Software Environment
+**Software Environment**
 * WSL2 - Ubuntu 22.04 LTS
 
-## Intel MLC Commands Used
+## Intel MLC Commands & Settings
 
 ### General commands used and why they were used:
 
@@ -37,7 +37,7 @@ Software Environment
 
 `--c2c_latency` &rarr; Latency measurement of cache-to-cache transfers in the processor.
 
-### Important Parameters
+### Important Command Parameters
 
 **Data Access Size:**
 
@@ -62,13 +62,13 @@ Software Environment
 `-W5` &rarr; Read:Write = 1:1
 
 
-### FIO Commands Used & Overview
+## FIO Commands & Settings
 
 A flash drive was used as a test device for random reads and writes. This was done due to the fact that our working environment was WSL2 (Ubuntu) within Windows and it does not recognize partitions on an internal drive (just sees all memory as Virtual Memory). As a result, using an external drive was the best workaround that prevents issues with overwriting OS information during random write performance analysis with FIO.
 
 Analysis was done on a variety of read vs. write intensity ratios (read-only, write-only, multiple ratios of read vs. write) and data access sizes (4KB, 32KB, 128KB). Throughput vs. latency was also analyzed.
 
-**Important Command Parameters:**
+### Important Command Parameters:
 
 `--rw` &rarr; Determines analysis type (randread or randwrite).
 
@@ -85,7 +85,6 @@ fio --name=[global] --ioengine=libaio –filename=/dev/<ssd_device_name_here> --
 **Random Writes:**
 
 [Useful FIO Guide Video](https://www.youtube.com/watch?v=RnqnogK5ceo&ab_channel=TechnicalBytes)
-
 
 
 ## Results:
