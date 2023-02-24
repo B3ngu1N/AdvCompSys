@@ -100,6 +100,11 @@ sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test
 sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16 --size=512M --readwrite=randread --ramp_time=4 --group_reporting
 ```
 
+**Random Read-Write - 1:1**
+```shell
+sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16 --size=512M --readwrite=randrw --ramp_time=4 --group_reporting
+```
+
 **Sequential write test for throughput**
 ```shell
 sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16 --size=512M --readwrite=write --ramp_time=4 --group_reporting
@@ -108,6 +113,11 @@ sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test
 **Sequential Read test for throughput**
 ```shell
 sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16  --size=512M --readwrite=read --ramp_time=4 --group_reporting
+```
+
+**Sequential Read:Write - 1:1**
+```shell
+sync;fio --randrepeat=1 --ioengine=libaio --direct=1 --name=test --filename=test --bs=32k --numjobs=16  --size=512M --readwrite=rw --ramp_time=4 --group_reporting
 ```
 
 [FIO Documentation](https://fio.readthedocs.io/en/latest/)
