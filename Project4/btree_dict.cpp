@@ -16,17 +16,19 @@
 
 typedef std::unordered_map<std::string, int> MAP;
 typedef std::vector<int> DICT;
+typedef std::vector<std::string> COL_DATA;
 
 // Holds all Input & Output Data for Individual Threads
 typedef struct dict_args {
-    char* cBlock;
-    char* cOut;
-    size_t outdata_length;
+    COL_DATA* dBlock;
+    int dBlock_Len;
+    MAP* dMapping;
+    DICT* dDict;
 } dict_args_t;
 
-/* CHECK
- * Check that the condition holds. If it doesn't print a message and die.
- */
+/*  CHECK
+    Check that the condition holds. If it doesn't print a message and die.
+*/
 #define CHECK(cond, ...)                        \
     do {                                        \
         if (!(cond)) {                          \
@@ -42,20 +44,9 @@ typedef struct dict_args {
     } while (0)
 
 
-void* dictHelper(void* args)
+// Read in column data from inFilename, put in input_data, return # of column entries
+int readInFile(const char* inFilename, COL_DATA* input_data)
 {
-    dict_args_t* cargs = (dict_args_t*)args;
-    size_t const buffInSize = strlen(cargs->cBlock);
-    
-    
-
-    pthread_exit(NULL);
-}
-
-
-void dictEncode(const char* inFilename, MAP* mapping, DICT* encoded)
-{
-    int num_threads = 4;
     // open input file
     std::ifstream infile;
     infile.open(inFilename); 
@@ -64,16 +55,44 @@ void dictEncode(const char* inFilename, MAP* mapping, DICT* encoded)
         exit(1);
     }
 
-    // Find file length
-    infile.seekg(0, infile.end);
-    int length = infile.tellg();
-    infile.seekg(0, infile.beg);
+    /*
+        Read in all of the column data into a vector (line by line), then
+        send that segmented data to pthreads to encode in segments. 
+        Finally, merge that encoded data back together.
+    */
+    std::string input;
+    int length=0;
+    while(getline(infile, input)) {
+        input_data->push_back(input);
+        length++;
+    }
 
-    // Find number of 16kB segments, round up
-    int num_segments = ceil((float)length / (float)SEGMENT_LENGTH);
+    // Close input file
+    infile.close();
+
+    // Return the length/number of column data
+    return length;
+}
+
+
+void* dictHelper(void* args)
+{
+    dict_args_t* dargs = (dict_args_t*)args;
+    size_t const buffInSize = strlen(dargs->dBlock);
+    
+    
+
+    pthread_exit(NULL);
+}
+
+
+void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded)
+{
+    int num_threads = 8;
+    // Find number of segments, round up
+    int num_segments = ceil((float)input_len / (float)SEGMENT_LENGTH);
 
     dict_args_t **all_output = new dict_args_t*[num_threads];
-    int cSize = 0;
     do {
         // Determine if number of threads input is more or less than num segments
         if(num_segments <= num_threads){
@@ -84,33 +103,38 @@ void dictEncode(const char* inFilename, MAP* mapping, DICT* encoded)
         int rc;
 
         for(int i = 0; i < num_threads; i++){
-            dict_args_t* cargs = new dict_args_t;
-            cargs->cBlock = new char[SEGMENT_LENGTH];
+            dict_args_t* dargs = new dict_args_t;
+            dargs->dBlock = new COL_DATA;
 
-            //********************************************* Current issue: this would read in \n characters
-            infile.read(cargs->cBlock, SEGMENT_LENGTH);
+            // ***** Need to copy segment of original vector data into a new vector
+            //       to be distributed to the pthreads
+            COL_DATA::iterator itr_beg, itr_end;
+            itr_beg = input_data->begin() + (i*SEGMENT_LENGTH);
+            itr_end = itr_beg + SEGMENT_LENGTH;
+            if(itr_end > input_data->end()) itr_end = input_data->end(); 
 
 
-            all_output[i] = cargs;
+
+            all_output[i] = dargs;
 
             rc = pthread_create(&threads[i], NULL, dictHelper, all_output[i]);
         }
 
         for(int i = 0; i < num_threads; i++){
-            pthread_join(threads[i], NULL);            
+            pthread_join(threads[i], NULL);
+
+
+
         }
 
         // Delete Dynammic Memory
         for(int i = 0; i < num_threads; i++){
-            free(all_output[i]->cBlock);
+            free(all_output[i]->dBlock);
         }
 
         num_segments -= num_threads;
     } while(num_segments > 0);
 
-
-    // Close the Input and Output File
-    infile.close();
 
     // Free all Dynamic Memory
     free(all_output);
@@ -128,16 +152,21 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    // File Names
-    const char* const inFilename = argv[2];
+    // File Name
+    const char* const inFilename = argv[1];
+    // Data Variables
     MAP* mapping = new MAP;
     DICT* encoded = new DICT;
+    COL_DATA* input_data = new COL_DATA;
+    int input_len;
+
+    input_len = readInFile(inFilename, input_data);
 
     // Timer Start
     start = clock();
 
     // Compress
-    dictEncode(inFilename, mapping, encoded);
+    dictEncode(input_data, input_len, mapping, encoded);
     
     // Timer End
     end = clock();
