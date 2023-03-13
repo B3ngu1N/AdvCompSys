@@ -6,13 +6,14 @@
 */
 
 #include <iostream>
+#include <utility>
 #include <string>
 #include <unordered_map>
 #include <bits/stdc++.h>
 #include <fstream>
 #include <pthread.h>
 
-#define SEGMENT_LENGTH 64000
+#define SEGMENT_LENGTH 16000
 
 typedef std::unordered_map<std::string, int> MAP;
 typedef std::vector<int> DICT;
@@ -44,8 +45,20 @@ typedef struct dict_args {
     } while (0)
 
 
+// Hash function for unique identifiers over each thread
+int hashFunc(std::string& key)
+{
+    unsigned long hash = 5381;
+
+    for (int i = 0; i<key.length(); i++)
+        hash = ((hash << 5) + hash) + key[i]; /* hash * 33 + key[i] */
+
+    return hash;
+}
+
+
 // Read in column data from inFilename, put in input_data, return # of column entries
-int readInFile(const char* inFilename, COL_DATA* input_data)
+unsigned int readInFile(const char* inFilename, COL_DATA* input_data)
 {
     // open input file
     std::ifstream infile;
@@ -61,8 +74,9 @@ int readInFile(const char* inFilename, COL_DATA* input_data)
         Finally, merge that encoded data back together.
     */
     std::string input;
-    int length=0;
+    unsigned int length=0;
     while(getline(infile, input)) {
+        std::remove_if(input.begin(), input.end(), ::isspace); //remove whitespace (\n)
         input_data->push_back(input);
         length++;
     }
@@ -78,19 +92,25 @@ int readInFile(const char* inFilename, COL_DATA* input_data)
 void* dictHelper(void* args)
 {
     dict_args_t* dargs = (dict_args_t*)args;
-    size_t const buffInSize = strlen(dargs->dBlock);
     
-    
+    COL_DATA::iterator itr = dargs->dBlock->begin();
+    COL_DATA::iterator itr_end = dargs->dBlock->end();
+
+    for(; itr!=itr_end; itr++){
+        int hash_val = hashFunc(*itr);
+        dargs->dMapping->insert(std::make_pair(*itr, hash_val));
+        dargs->dDict->push_back(hash_val);
+    }
 
     pthread_exit(NULL);
 }
 
 
-void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded)
+void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded, int num_threads)
 {
-    int num_threads = 8;
     // Find number of segments, round up
-    int num_segments = ceil((float)input_len / (float)SEGMENT_LENGTH);
+    unsigned int num_segments = ceil((double)input_len / (double)SEGMENT_LENGTH);
+    unsigned int thread_segment = 0, num_threads_orig = num_threads;
 
     dict_args_t **all_output = new dict_args_t*[num_threads];
     do {
@@ -108,12 +128,19 @@ void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded
 
             // ***** Need to copy segment of original vector data into a new vector
             //       to be distributed to the pthreads
-            COL_DATA::iterator itr_beg, itr_end;
-            itr_beg = input_data->begin() + (i*SEGMENT_LENGTH);
-            itr_end = itr_beg + SEGMENT_LENGTH;
+            COL_DATA::iterator itr, itr_end;
+            itr = input_data->begin() + (i*SEGMENT_LENGTH) 
+                                + (thread_segment*num_threads_orig*SEGMENT_LENGTH);
+            itr_end = itr + SEGMENT_LENGTH;
             if(itr_end > input_data->end()) itr_end = input_data->end(); 
+            dargs->dBlock_Len = (int)(itr_end - itr);
 
+            for(; itr != itr_end; ++itr){
+                dargs->dBlock->push_back(*itr);
+            }
 
+            dargs->dDict = new DICT;
+            dargs->dMapping = new MAP;
 
             all_output[i] = dargs;
 
@@ -123,16 +150,18 @@ void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded
         for(int i = 0; i < num_threads; i++){
             pthread_join(threads[i], NULL);
 
-
+            DICT::iterator itr = all_output[i]->dDict->begin();
+            
 
         }
 
-        // Delete Dynammic Memory
+        // Delete Dynamic Memory
         for(int i = 0; i < num_threads; i++){
             free(all_output[i]->dBlock);
         }
 
         num_segments -= num_threads;
+        thread_segment++;
     } while(num_segments > 0);
 
 
@@ -145,28 +174,42 @@ int main(int argc, char** argv)
 {
     clock_t start, end;
     const char* const exeName = argv[0]; // Name of file to compress
+    int num_threads = 8;
 
-    if (argc!=2) { // Need 2 runtime arguments
+    if (argc!=2 || argc!=3) { // Need 2 runtime arguments
         printf("Wrong Arguments\n");
-        printf("%s INFILE\n", exeName);
+        printf("%s INFILE (NUM_THREADS)\n", exeName);
         return 1;
     }
 
     // File Name
     const char* const inFilename = argv[1];
+    int num_threads = atoi(argv[2]);
     // Data Variables
     MAP* mapping = new MAP;
     DICT* encoded = new DICT;
     COL_DATA* input_data = new COL_DATA;
-    int input_len;
+    unsigned int input_len;
 
     input_len = readInFile(inFilename, input_data);
 
+    unsigned int num_segments = ceil((double)input_len / (double)SEGMENT_LENGTH);
+    
+    for(int i = 0; i<num_segments; i++){
+        COL_DATA::iterator itr_beg, itr_end;
+        itr_beg = input_data->begin() + (i*SEGMENT_LENGTH);
+        itr_end = itr_beg + SEGMENT_LENGTH;
+        if(itr_end > input_data->end()) itr_end = input_data->end(); 
+
+        for(; itr_beg != itr_end; ++itr_beg){
+            
+        }
+    }
     // Timer Start
     start = clock();
 
     // Compress
-    dictEncode(input_data, input_len, mapping, encoded);
+    dictEncode(input_data, input_len, mapping, encoded, num_threads);
     
     // Timer End
     end = clock();
@@ -176,6 +219,11 @@ int main(int argc, char** argv)
     std::cout << "Time taken by multithreaded dictionary encoding program is : " << std::fixed
          << time_taken << std::setprecision(5);
     std::cout << " sec " << std::endl;
+
+
+    // Test reads, scans, etc
+
+
 
     return 0;
 }
