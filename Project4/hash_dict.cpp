@@ -46,7 +46,7 @@ typedef struct dict_args {
 
 
 // Hash function for unique identifiers over each thread
-int hashFunc(std::string& key)
+unsigned long hashFunc(std::string& key)
 {
     unsigned long hash = 5381;
 
@@ -135,7 +135,7 @@ void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded
             if(itr_end > input_data->end()) itr_end = input_data->end(); 
             dargs->dBlock_Len = (int)(itr_end - itr);
 
-            for(; itr != itr_end; ++itr){
+            for(; itr != itr_end; ++itr){ //copy
                 dargs->dBlock->push_back(*itr);
             }
 
@@ -150,14 +150,19 @@ void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded
         for(int i = 0; i < num_threads; i++){
             pthread_join(threads[i], NULL);
 
-            DICT::iterator itr = all_output[i]->dDict->begin();
-            
+            // Append arrays to end of encoded
+            encoded->insert(encoded->end(), 
+                            all_output[i]->dDict->begin(), all_output[i]->dDict->end());
 
+            // Merge in mappings
+            mapping->merge(*(all_output[i]->dMapping));
         }
 
         // Delete Dynamic Memory
         for(int i = 0; i < num_threads; i++){
             free(all_output[i]->dBlock);
+            free(all_output[i]->dDict);
+            free(all_output[i]->dMapping);
         }
 
         num_segments -= num_threads;
@@ -176,7 +181,7 @@ int main(int argc, char** argv)
     const char* const exeName = argv[0]; // Name of file to compress
     int num_threads = 8;
 
-    if (argc!=2 || argc!=3) { // Need 2 runtime arguments
+    if (argc<2 || argc>3) { // Need 2 or 3 runtime arguments
         printf("Wrong Arguments\n");
         printf("%s INFILE (NUM_THREADS)\n", exeName);
         return 1;
@@ -184,7 +189,7 @@ int main(int argc, char** argv)
 
     // File Name
     const char* const inFilename = argv[1];
-    int num_threads = atoi(argv[2]);
+    num_threads = atoi(argv[2]);
     // Data Variables
     MAP* mapping = new MAP;
     DICT* encoded = new DICT;
@@ -193,18 +198,6 @@ int main(int argc, char** argv)
 
     input_len = readInFile(inFilename, input_data);
 
-    unsigned int num_segments = ceil((double)input_len / (double)SEGMENT_LENGTH);
-    
-    for(int i = 0; i<num_segments; i++){
-        COL_DATA::iterator itr_beg, itr_end;
-        itr_beg = input_data->begin() + (i*SEGMENT_LENGTH);
-        itr_end = itr_beg + SEGMENT_LENGTH;
-        if(itr_end > input_data->end()) itr_end = input_data->end(); 
-
-        for(; itr_beg != itr_end; ++itr_beg){
-            
-        }
-    }
     // Timer Start
     start = clock();
 
@@ -222,7 +215,6 @@ int main(int argc, char** argv)
 
 
     // Test reads, scans, etc
-
 
 
     return 0;
