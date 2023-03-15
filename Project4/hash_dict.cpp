@@ -97,7 +97,7 @@ void* dictHelper(void* args)
     COL_DATA::iterator itr_end = dargs->dBlock->end();
 
     for(; itr!=itr_end; itr++){
-        int hash_val = hashFunc(*itr);
+        unsigned long hash_val = hashFunc(*itr);
         dargs->dMapping->insert(std::make_pair(*itr, hash_val));
         dargs->dDict->push_back(hash_val);
     }
