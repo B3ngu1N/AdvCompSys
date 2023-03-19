@@ -19,13 +19,12 @@ typedef std::unordered_map<std::string, unsigned long> MAP;
 typedef std::vector<unsigned long> DICT;
 typedef std::vector<std::string> COL_DATA;
 
-// Holds all Input & Output Data for Individual Threads
-typedef struct dict_args {
-    COL_DATA::const_iterator dBlock_itr;
-    int dBlock_Len;
-    MAP* dMapping;
-    DICT* dDict;
-} dict_args_t;
+struct Node {
+    unsigned long hashVal;
+    std::unordered_map<char, Node*>* next;
+};
+
+typedef std::unordered_map<char, Node*> NODE_MAP;
 
 /*  CHECK
     Check that the condition holds. If it doesn't print a message and die.
@@ -55,6 +54,136 @@ unsigned long hashFunc(const std::string& key)
 
     return hash;
 }
+
+
+class Tree {
+private:
+    Node* root;
+    MAP* mapping; // holds non-duplicate data to make merging easier
+
+public:
+    Tree() {
+        mapping = new MAP;
+        Node* newNode = new Node();
+        newNode->hashVal = 0;
+        NODE_MAP* next_nodemap = new NODE_MAP;
+        newNode->next = next_nodemap;
+        root = newNode;
+    }
+
+    Node* getRoot() {
+        return root;
+    }
+
+    Node* createNode(unsigned long data) {
+        Node* newNode = new Node();
+        newNode->hashVal = data;
+        NODE_MAP* next_nodemap = new NODE_MAP;
+        newNode->next = next_nodemap;
+
+        return newNode;
+    }
+
+    void insert_helper(Node* child, std::string& str2hash, std::string& new_str) {
+        if(new_str.length()==0) return;
+        char first_char = new_str[0]; // needed to have this beucase it was being annoying
+        str2hash += new_str.substr(0, 1);
+        std::string remaining = new_str.substr(1, new_str.length());
+
+        NODE_MAP::iterator itr = child->next->find(first_char);
+        // Character has already been added as a chain possibility
+        if(itr != child->next->end()) {
+            insert_helper(itr->second, str2hash, remaining);
+        }
+        else {
+            Node* nextNode = createNode(hashFunc(str2hash));
+            child->next->insert(std::make_pair(first_char, nextNode));
+            insert_helper(nextNode, str2hash, remaining);
+        }
+    }
+
+    void insert(std::string new_str) {
+        unsigned long hash_val = hashFunc(new_str);
+        this->mapping->insert(std::make_pair(new_str, hash_val)); // to make merging easier
+
+        char first_char = new_str[0]; // needed to have this beucase it was being annoying
+        std::string first_str = new_str.substr(0, 1);
+        std::string remaining = new_str.substr(1, new_str.length());
+
+        NODE_MAP::iterator itr = root->next->find(first_char);
+        // Character has already been added as a chain possibility
+        if(itr != root->next->end()) {
+            insert_helper(itr->second, first_str, remaining);
+        }
+        else {
+            Node* nextNode = createNode(hashFunc(first_str));
+            root->next->insert(std::make_pair(first_char, nextNode));
+            insert_helper(nextNode, first_str, remaining);
+        }
+    }
+
+
+    unsigned long getHashVal_helper(Node* child, int len_traveled, int str_len, std::string& new_str){
+        if(new_str.length()==0 || len_traveled == str_len) return child->hashVal;
+        char first_char = new_str[0]; // needed to have this beucase it was being annoying
+        std::string remaining = new_str.substr(1, new_str.length());
+
+        NODE_MAP::iterator itr = child->next->find(first_char);
+        // Character has already been added as a chain possibility
+        if(itr != child->next->end()) {
+            return getHashVal_helper(itr->second, len_traveled+1, str_len, remaining);
+        }
+        else {
+            return 0;
+        }
+    }
+
+    unsigned long getHashVal(std::string& new_str) {
+        int len_traveled = 0, str_len = new_str.length();
+        char first_char = new_str[0]; // needed to have this beucase it was being annoying
+        std::string remaining = new_str.substr(1, new_str.length());
+
+        NODE_MAP::iterator itr = root->next->find(first_char);
+        // Character has already been added as a chain possibility
+        if(itr != root->next->end()) {
+            return getHashVal_helper(itr->second, len_traveled+1, str_len, remaining);
+        }
+        else {
+            return 0;
+        }
+    }
+
+    void merge(Tree* b){
+        this->mapping->merge(*(b->mapping));
+        MAP::iterator itr = this->mapping->begin();
+        for(; itr != this->mapping->end(); itr++){
+            this->insert(itr->first);
+        }
+    }
+
+    // printout for testing
+    void traverse(Node* node){
+        if (node != nullptr) {
+            std::cout << node->hashVal << " ";
+
+            NODE_MAP::iterator itr = node->next->begin();
+            for(; itr != node->next->end(); itr++){
+                std::cout << itr->first << " ";
+                traverse(itr->second);
+            }
+            std::cout << std::endl;
+        }
+    }
+};
+
+
+// Holds all Input & Output Data for Individual Threads
+typedef struct dict_args {
+    COL_DATA::const_iterator dBlock_itr;
+    int dBlock_Len;
+    Tree* dTree;
+    DICT* dDict;
+} dict_args_t;
 
 
 // Read in column data from inFilename, put in input_data, return # of column entries
@@ -96,7 +225,7 @@ void* dictHelper(void* args)
     COL_DATA::const_iterator itr_end = dargs->dBlock_itr + dargs->dBlock_Len;
     for(; dargs->dBlock_itr!=itr_end; dargs->dBlock_itr++){
         unsigned long hash_val = hashFunc(*(dargs->dBlock_itr));
-        dargs->dMapping->insert(std::make_pair(*(dargs->dBlock_itr), hash_val));
+        dargs->dTree->insert(*(dargs->dBlock_itr));
         dargs->dDict->push_back(hash_val);
     }
 
@@ -104,14 +233,14 @@ void* dictHelper(void* args)
 }
 
 
-void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded, int num_threads)
+void dictEncode(COL_DATA* input_data, int input_len, Tree* mapping, DICT* encoded, int num_threads)
 {
     // Find number of segments, round up
-    unsigned int num_segments = ceil((double)input_len / (double)SEGMENT_LENGTH);
-    unsigned int thread_segment = 0, num_threads_orig = num_threads;
+    unsigned int num_segments_orig = ceil((double)input_len / (double)SEGMENT_LENGTH);
+    unsigned int thread_segment = 0, num_threads_orig = num_threads, num_segments = num_segments_orig;
 
     /*
-        Encoding
+        Encoding of data using Huffman Tree created and multithreading
     */
     dict_args_t **all_output = new dict_args_t*[num_threads];
     do {
@@ -136,7 +265,7 @@ void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded
 
             dargs->dBlock_itr = itr;
             dargs->dDict = new DICT;
-            dargs->dMapping = new MAP;
+            dargs->dTree = new Tree;
 
             all_output[i] = dargs;
 
@@ -151,13 +280,13 @@ void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded
                             all_output[i]->dDict->begin(), all_output[i]->dDict->end());
 
             // Merge in mappings
-            mapping->merge(*(all_output[i]->dMapping));
+            mapping->merge(all_output[i]->dTree);
         }
 
         // Delete Dynamic Memory
         for(int i = 0; i < num_threads; i++){
             free(all_output[i]->dDict);
-            free(all_output[i]->dMapping);
+            free(all_output[i]->dTree);
         }
 
         num_segments -= num_threads;
@@ -186,7 +315,7 @@ int main(int argc, char** argv)
     const char* const inFilename = argv[1];
     num_threads = atoi(argv[2]);
     // Data Variables
-    MAP* mapping = new MAP;
+    Tree* mapping = new Tree;
     DICT* encoded = new DICT;
     COL_DATA* input_data = new COL_DATA;
     unsigned int input_len;
@@ -201,6 +330,8 @@ int main(int argc, char** argv)
     
     // Timer End
     end = clock();
+
+    // mapping->traverse(mapping->getRoot());
 
     // Calculating total time taken by the program.
     double time_taken = (double)(end - start) / CLOCKS_PER_SEC;
