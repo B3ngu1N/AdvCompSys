@@ -1,6 +1,8 @@
 /*
     Dictionary implementation using a hash table encoding.
 
+    Compilation: g++ hash_dict.cpp -g -omp -lpthread -o dict.o
+
     @author Thomas Petr
     @author Ben Haft
 */
@@ -14,7 +16,7 @@
 #include <pthread.h>
 #include <omp.h>
 
-#define SEGMENT_LENGTH 16000
+#define SEGMENT_LENGTH 64000
 
 typedef std::unordered_map<std::string, unsigned long> MAP;
 typedef std::vector<unsigned long> DICT;
@@ -337,7 +339,8 @@ void findPrefix(std::string& prefix, MAP* mapping, DICT* encoded, GROUP_INDICES*
 
                 GROUP_INDICES::iterator ind_itr = output->find(searchables[k]);
                 if(ind_itr != output->end()){
-                    ind_itr->second.insert(ind_itr->second.end(), all_output[i]->sBlock_Indices->begin(), all_output[i]->sBlock_Indices->end());
+                    ind_itr->second.insert(ind_itr->second.end(), 
+                    all_output[i]->sBlock_Indices->begin(), all_output[i]->sBlock_Indices->end());
                 }
                 else{
                     output->insert(std::make_pair(searchables[k], *all_output[i]->sBlock_Indices));
@@ -401,7 +404,10 @@ int main(int argc, char** argv)
          << time_taken << std::setprecision(5);
     std::cout << " sec " << std::endl;
 
-    
+
+    /************************************************************************
+     * Single String Searching - Adjust the value in find_str to search
+    ************************************************************************/
     INDICES* results = new INDICES;
     std::string find_str = "pazayouzlg";
     // Test reads, scans, etc
@@ -424,8 +430,11 @@ int main(int argc, char** argv)
     std::cout << " sec " << std::endl;
 
 
+    /************************************************************************
+     * Prefix Searching - Adjust the value in find_str to search
+    ************************************************************************/
     GROUP_INDICES* prefix_results = new GROUP_INDICES;
-    find_str = "o";
+    find_str = "yjpz";
     // Test reads, scans, etc
     start = clock();
 
