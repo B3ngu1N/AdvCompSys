@@ -178,6 +178,15 @@ void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded
     free(all_output);
 }
 
+void* queryHelper(void* args){
+    search_args_t* sargs = (search_args_t*)args;
+
+    // __m256i values = _mm256_setzero_si256();
+    // values = _mm256_loadu_si256(data);
+
+    pthread_exit(NULL);
+}
+
 unsigned int* hashQuery(unsigned long hash_value, unsigned int input_len, DICT* encoded, int num_threads){
     unsigned int row_per_thread = ceil((float)input_len / (float)num_threads);
     unsigned int lines_over = num_threads * row_per_thread - input_len;
@@ -201,7 +210,7 @@ unsigned int* hashQuery(unsigned long hash_value, unsigned int input_len, DICT* 
 
         all_sargs[i] = sargs;
 
-        rc = pthread_create(&threads[i], NULL, queryHelper, all_sargs[i]);
+        rc = pthread_create(&threads[i], NULL, queryHelper, sargs);
     }
 
     unsigned int count = 0;
@@ -215,16 +224,6 @@ unsigned int* hashQuery(unsigned long hash_value, unsigned int input_len, DICT* 
             indices.push_back((all_sargs[i]->sindeces)[j]);
         }
     }
-}
-
-void* queryHelper(void* args){
-    search_args_t* sargs = (search_args_t*)args;
-    // unsigned long data = sargs->sencoded[0][0];
-
-    // __m256i values = _mm256_setzero_si256();
-    // values = _mm256_loadu_si256(data);
-
-    pthread_exit(NULL);
 }
 
 int main(int argc, char** argv)
