@@ -290,7 +290,7 @@ void findPrefix(std::string& prefix, MAP* mapping, DICT* encoded, GROUP_INDICES*
 {
     // Find number of segments, round up
     unsigned int num_segments = ceil((double)encoded->size() / (double)SEGMENT_LENGTH);
-    unsigned int thread_segment = 0, num_threads_orig = num_threads;
+    unsigned int thread_segment = 0, num_threads_orig = num_threads, num_segments_orig = num_segments;
     std::vector<std::string> searchables = findPrefixMembers(prefix, mapping);
 
     /*
@@ -357,6 +357,8 @@ void findPrefix(std::string& prefix, MAP* mapping, DICT* encoded, GROUP_INDICES*
         // Free all Dynamic Memory
         free(all_output);
         num_threads = num_threads_orig;
+        thread_segment = 0;
+        num_segments = num_segments_orig;
     }
 }
 
