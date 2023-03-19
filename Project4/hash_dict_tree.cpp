@@ -126,7 +126,11 @@ public:
     }
 
 
-    unsigned long getHashVal_helper(Node* child, int len_traveled, int str_len, std::string& new_str){
+    unsigned long getHashVals(std::string& new_str) {
+        
+    }
+
+    unsigned long getHashValsPrefix_helper(Node* child, int len_traveled, int str_len, std::string& new_str){
         if(new_str.length()==0 || len_traveled == str_len) return child->hashVal;
         char first_char = new_str[0]; // needed to have this beucase it was being annoying
         std::string remaining = new_str.substr(1, new_str.length());
@@ -134,14 +138,14 @@ public:
         NODE_MAP::iterator itr = child->next->find(first_char);
         // Character has already been added as a chain possibility
         if(itr != child->next->end()) {
-            return getHashVal_helper(itr->second, len_traveled+1, str_len, remaining);
+            return getHashValsPrefix_helper(itr->second, len_traveled+1, str_len, remaining);
         }
         else {
             return 0;
         }
     }
 
-    unsigned long getHashVal(std::string& new_str) {
+    unsigned long getHashVals_prefix(std::string& new_str) {
         int len_traveled = 0, str_len = new_str.length();
         char first_char = new_str[0]; // needed to have this beucase it was being annoying
         std::string remaining = new_str.substr(1, new_str.length());
@@ -149,7 +153,7 @@ public:
         NODE_MAP::iterator itr = root->next->find(first_char);
         // Character has already been added as a chain possibility
         if(itr != root->next->end()) {
-            return getHashVal_helper(itr->second, len_traveled+1, str_len, remaining);
+            return getHashValsPrefix_helper(itr->second, len_traveled+1, str_len, remaining);
         }
         else {
             return 0;

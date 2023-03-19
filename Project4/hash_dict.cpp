@@ -12,11 +12,13 @@
 #include <bits/stdc++.h>
 #include <fstream>
 #include <pthread.h>
+#include <omp.h>
 
-#define SEGMENT_LENGTH 16000
+#define SEGMENT_LENGTH 4
 
 typedef std::unordered_map<std::string, unsigned long> MAP;
 typedef std::vector<unsigned long> DICT;
+typedef std::vector<unsigned long> INDICES;
 typedef std::vector<std::string> COL_DATA;
 
 // Holds all Input & Output Data for Individual Threads
@@ -26,6 +28,15 @@ typedef struct dict_args {
     MAP* dMapping;
     DICT* dDict;
 } dict_args_t;
+
+// Holds information for multithreaded searching
+typedef struct search_args {
+    DICT::const_iterator sBlock_itr;
+    int sBlock_Len;
+    unsigned int start_index;
+    unsigned long hashVal;
+    INDICES* sBlock_Indices;
+} search_args_t;
 
 /*  CHECK
     Check that the condition holds. If it doesn't print a message and die.
@@ -125,8 +136,7 @@ void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded
         for(int i = 0; i < num_threads; i++){
             dict_args_t* dargs = new dict_args_t;
 
-            // ***** Need to copy segment of original vector data into a new vector
-            //       to be distributed to the pthreads
+            // Get start location and end location as iterators
             COL_DATA::const_iterator itr, itr_end;
             itr = input_data->begin() + (i*SEGMENT_LENGTH) 
                                 + (thread_segment*num_threads_orig*SEGMENT_LENGTH);
@@ -170,6 +180,109 @@ void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded
 }
 
 
+// Find members of the mapping with given prefix, store strings in output
+void findPrefixMembers(std::string& prefix, MAP* mapping, std::vector<std::string> output)
+{
+    MAP::iterator itr = mapping->begin();
+    unsigned long pre_hash = hashFunc(prefix);
+    for(; itr != mapping->end(); itr++){
+        if(itr->second >= pre_hash){
+            std::string prefix_chk = (itr->first).substr(0, prefix.length());
+            if(pre_hash == hashFunc(prefix_chk)){
+                output.push_back(itr->first);
+            }
+        }
+    }
+}
+
+
+void* findHelper(void* args)
+{
+    search_args_t* sargs = (search_args_t*)args;
+
+    DICT::const_iterator itr_end = sargs->sBlock_itr + sargs->sBlock_Len;
+    DICT::const_iterator itr_begin = sargs->sBlock_itr;
+    #pragma omp parallel for
+    for(; sargs->sBlock_itr!=itr_end; sargs->sBlock_itr++){
+        if(*(sargs->sBlock_itr) == sargs->hashVal){
+            sargs->sBlock_Indices->push_back((unsigned long)(sargs->sBlock_itr - itr_begin) + sargs->start_index);
+        }
+    }
+
+    pthread_exit(NULL);
+}
+
+
+void find(std::string& new_str, MAP* mapping, DICT* encoded, INDICES* output, int num_threads)
+{
+    MAP::iterator itr = mapping->find(new_str);
+    if(itr == mapping->end()) {
+        return;
+    }
+    else {
+        // Find number of segments, round up
+        unsigned int num_segments = ceil((double)encoded->size() / (double)SEGMENT_LENGTH);
+        unsigned int thread_segment = 0, num_threads_orig = num_threads;
+        unsigned long hash2Find = hashFunc(new_str);
+
+        /*
+            Breakup into SIMD search threads
+        */
+        search_args_t **all_output = new search_args_t*[num_threads];
+        do {
+            // Determine if number of threads input is more or less than num segments
+            if(num_segments <= num_threads){
+                num_threads = num_segments;
+            }
+            // Multithreaded Compress Helper
+            pthread_t threads[num_threads];
+
+            for(int i = 0; i < num_threads; i++){
+                search_args_t* sargs = new search_args_t;
+
+                // Get start location and end location as iterators
+                DICT::const_iterator itr, itr_end;
+                itr = encoded->begin() + (i*SEGMENT_LENGTH) 
+                                    + (thread_segment*num_threads_orig*SEGMENT_LENGTH);
+                itr_end = itr + SEGMENT_LENGTH;
+                if(itr_end > encoded->end()) itr_end = encoded->end(); 
+                sargs->sBlock_Len = (int)(itr_end - itr);
+
+                sargs->sBlock_itr = itr;
+                sargs->sBlock_Indices = new INDICES;
+                sargs->hashVal = hash2Find;
+                sargs->start_index = (i*SEGMENT_LENGTH) 
+                                    + (thread_segment*num_threads_orig*SEGMENT_LENGTH);
+
+                all_output[i] = sargs;
+
+                pthread_create(&threads[i], NULL, findHelper, all_output[i]);
+            }
+
+            for(int i = 0; i < num_threads; i++){
+                pthread_join(threads[i], NULL);
+
+                output->insert(output->end(), all_output[i]->sBlock_Indices->begin(),
+                                            all_output[i]->sBlock_Indices->end());
+            }
+
+            // Delete Dynamic Memory
+            for(int i = 0; i < num_threads; i++){
+                free(all_output[i]->sBlock_Indices);
+            }
+
+            num_segments -= num_threads;
+            thread_segment++;
+        } while(num_segments > 0);
+
+
+        // Free all Dynamic Memory
+        free(all_output);
+    }
+}
+
+
+
 int main(int argc, char** argv)
 {
     clock_t start, end;
@@ -208,10 +321,27 @@ int main(int argc, char** argv)
          << time_taken << std::setprecision(5);
     std::cout << " sec " << std::endl;
 
+    
+    INDICES* results = new INDICES;
+    std::string find_str = "pazayouzlg";
     // Test reads, scans, etc
+    start = clock();
 
+    find(find_str, mapping, encoded, results, num_threads);
 
+    end = clock();
 
+    std::cout << "Indices (" << find_str << "): ";
+    for(int i = 0; i<results->size(); i++){
+        std::cout << (*results)[i] << " ";
+    }
+    std::cout << std::endl;
+
+    // Calculating total time taken by the program.
+    time_taken = (double)(end - start) / CLOCKS_PER_SEC;
+    std::cout << "Time taken by multithreaded SIMD dictionary encoding read is : " << std::fixed
+         << time_taken << std::setprecision(5);
+    std::cout << " sec " << std::endl;
 
     return 0;
 }
