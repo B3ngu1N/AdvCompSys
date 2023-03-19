@@ -104,22 +104,25 @@ public:
 
     void insert(std::string new_str) {
         unsigned long hash_val = hashFunc(new_str);
-        this->mapping->insert(std::make_pair(new_str, hash_val)); // to make merging easier
+        if(this->mapping->find(new_str) == this->mapping->end()) {
+            this->mapping->insert(std::make_pair(new_str, hash_val)); // to make merging easier
 
-        char first_char = new_str[0]; // needed to have this beucase it was being annoying
-        std::string first_str = new_str.substr(0, 1);
-        std::string remaining = new_str.substr(1, new_str.length());
+            char first_char = new_str[0]; // needed to have this beucase it was being annoying
+            std::string first_str = new_str.substr(0, 1);
+            std::string remaining = new_str.substr(1, new_str.length());
 
-        NODE_MAP::iterator itr = root->next->find(first_char);
-        // Character has already been added as a chain possibility
-        if(itr != root->next->end()) {
-            insert_helper(itr->second, first_str, remaining);
+            NODE_MAP::iterator itr = root->next->find(first_char);
+            // Character has already been added as a chain possibility
+            if(itr != root->next->end()) {
+                insert_helper(itr->second, first_str, remaining);
+            }
+            else {
+                Node* nextNode = createNode(hashFunc(first_str));
+                root->next->insert(std::make_pair(first_char, nextNode));
+                insert_helper(nextNode, first_str, remaining);
+            }
         }
-        else {
-            Node* nextNode = createNode(hashFunc(first_str));
-            root->next->insert(std::make_pair(first_char, nextNode));
-            insert_helper(nextNode, first_str, remaining);
-        }
+        else return;
     }
 
 
