@@ -425,6 +425,8 @@ int main(int argc, char** argv)
 
         findPrefix(find_str, mapping, encoded, prefix_results, num_threads);
 
+        end = clock();
+
         GROUP_INDICES::iterator itr = prefix_results->begin();
         std::cout << "Prefix: " << find_str << std::endl;
         for(; itr!=prefix_results->end(); itr++){
@@ -434,8 +436,6 @@ int main(int argc, char** argv)
             }
             std::cout << std::endl;
         }
-
-        end = clock();
     }
 
     // Calculating total time taken by the program.
