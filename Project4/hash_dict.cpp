@@ -369,7 +369,7 @@ int main(int argc, char** argv)
 
     if (argc<3 || argc>4) { // Need 3 or 4 runtime arguments
         printf("Wrong Arguments\n");
-        printf("%s INFILE (NUM_THREADS)\n", exeName);
+        printf("%s INFILE NUM_THREADS SEARCH_STRING\n", exeName);
         return 1;
     }
 
