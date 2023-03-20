@@ -33,6 +33,8 @@ In the vanilla column search (vanilla_search.cpp), the file is opened, then the 
 
 **Experimental Results:**
 
+![image](https://user-images.githubusercontent.com/112660711/226413948-642704e4-d323-426d-9f42-58c83220dbe6.png)
+
 
 **Analysis and Conclusions:**
 
