@@ -20,6 +20,7 @@ typedef std::unordered_map<std::string, unsigned long> MAP;
 typedef std::vector<unsigned long> DICT;
 typedef std::vector<unsigned long> INDICES;
 typedef std::vector<std::string> COL_DATA;
+typedef std::unordered_map<std::string, INDICES > GROUP_INDICES;
 
 // Holds all Input & Output Data for Individual Threads
 typedef struct dict_args {
@@ -181,8 +182,9 @@ void dictEncode(COL_DATA* input_data, int input_len, MAP* mapping, DICT* encoded
 
 
 // Find members of the mapping with given prefix, store strings in output
-void findPrefixMembers(std::string& prefix, MAP* mapping, std::vector<std::string> output)
+std::vector<std::string> findPrefixMembers(std::string& prefix, MAP* mapping)
 {
+    std::vector<std::string> output;
     MAP::iterator itr = mapping->begin();
     unsigned long pre_hash = hashFunc(prefix);
     for(; itr != mapping->end(); itr++){
@@ -193,6 +195,7 @@ void findPrefixMembers(std::string& prefix, MAP* mapping, std::vector<std::strin
             }
         }
     }
+    return output;
 }
 
 
@@ -281,7 +284,82 @@ void find(std::string& new_str, MAP* mapping, DICT* encoded, INDICES* output, in
     }
 }
 
+void findPrefix(std::string& prefix, MAP* mapping, DICT* encoded, GROUP_INDICES* output, int num_threads)
+{
+    // Find number of segments, round up
+    unsigned int num_segments = ceil((double)encoded->size() / (double)SEGMENT_LENGTH);
+    unsigned int thread_segment = 0, num_threads_orig = num_threads, num_segments_orig = num_segments;
+    std::vector<std::string> searchables = findPrefixMembers(prefix, mapping);
 
+    /*
+        Find each value with the prefix
+    */
+    for(int k = 0; k<searchables.size(); k++){
+        search_args_t **all_output = new search_args_t*[num_threads];
+        unsigned long hash2Find = hashFunc(searchables[k]);
+        /*
+            Breakup into SIMD search threads
+        */
+        do {
+            // Determine if number of threads input is more or less than num segments
+            if(num_segments <= num_threads){
+                num_threads = num_segments;
+            }
+            // Multithreaded Compress Helper
+            pthread_t threads[num_threads];
+
+            for(int i = 0; i < num_threads; i++){
+                search_args_t* sargs = new search_args_t;
+
+                // Get start location and end location as iterators
+                DICT::const_iterator itr, itr_end;
+                itr = encoded->begin() + (i*SEGMENT_LENGTH) 
+                                    + (thread_segment*num_threads_orig*SEGMENT_LENGTH);
+                itr_end = itr + SEGMENT_LENGTH;
+                if(itr_end > encoded->end()) itr_end = encoded->end(); 
+                sargs->sBlock_Len = (int)(itr_end - itr);
+
+                sargs->sBlock_itr = itr;
+                sargs->sBlock_Indices = new INDICES;
+                sargs->hashVal = hash2Find;
+                sargs->start_index = (i*SEGMENT_LENGTH) 
+                                    + (thread_segment*num_threads_orig*SEGMENT_LENGTH);
+
+                all_output[i] = sargs;
+
+                pthread_create(&threads[i], NULL, findHelper, all_output[i]);
+            }
+
+            for(int i = 0; i < num_threads; i++){
+                pthread_join(threads[i], NULL);
+
+                GROUP_INDICES::iterator ind_itr = output->find(searchables[k]);
+                if(ind_itr != output->end()){
+                    ind_itr->second.insert(ind_itr->second.end(), 
+                    all_output[i]->sBlock_Indices->begin(), all_output[i]->sBlock_Indices->end());
+                }
+                else{
+                    output->insert(std::make_pair(searchables[k], *all_output[i]->sBlock_Indices));
+                }
+            }
+
+            // Delete Dynamic Memory
+            for(int i = 0; i < num_threads; i++){
+                free(all_output[i]->sBlock_Indices);
+            }
+
+            num_segments -= num_threads;
+            thread_segment++;
+        } while(num_segments > 0);
+
+
+        // Free all Dynamic Memory
+        free(all_output);
+        num_threads = num_threads_orig;
+        thread_segment = 0;
+        num_segments = num_segments_orig;
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -340,19 +418,19 @@ int main(int argc, char** argv)
         std::cout << std::endl;
     }
     else{
-        std::vector<std::string> output;
+        GROUP_INDICES* prefix_results = new GROUP_INDICES;
 
         // Test reads, scans, etc
         start = clock();
 
-        findPrefixMembers(find_str, mapping, output);
+        findPrefix(find_str, mapping, encoded, prefix_results, num_threads);
 
-        for (auto i : output) {
-            std::cout << i << "Indices:";
-            find(i, mapping, encoded, results, num_threads);
-            std::cout << "Indices (" << find_str << "): ";
-            for(int j = 0; j<results->size(); j++){
-                std::cout << (*results)[j] << " ";
+        GROUP_INDICES::iterator itr = prefix_results->begin();
+        std::cout << "Prefix: " << find_str << std::endl;
+        for(; itr!=prefix_results->end(); itr++){
+            std::cout << "Indices (" << itr->first << "): ";
+            for(int i = 0; i<itr->second.size(); i++){
+                std::cout << itr->second[i] << " ";
             }
             std::cout << std::endl;
         }
