@@ -9,7 +9,7 @@ using namespace std;
 
 int main() {
     string filename = "Column.txt"; // name of input file
-    int segment_size = 512000; // size of each segment in bytes
+    int segment_size = 51200000; // size of each segment in bytes
     int segment_number = 0; // number of current segment
     int segment_size_counter = 0; // counter for current segment size
     string output_filename = "output_"; // prefix for output filenames
@@ -21,8 +21,8 @@ int main() {
     }
     
     while (!infile.eof()) {
-        char buffer[1024];
-        infile.read(buffer, 1024);
+        char buffer[9096];
+        infile.read(buffer, 9096);
         int read_bytes = infile.gcount();
         
         if (read_bytes == 0) {
