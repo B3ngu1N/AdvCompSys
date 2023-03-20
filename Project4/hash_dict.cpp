@@ -14,7 +14,7 @@
 #include <pthread.h>
 #include <omp.h>
 
-#define SEGMENT_LENGTH 16000
+#define SEGMENT_LENGTH 64000
 
 typedef std::unordered_map<std::string, unsigned long> MAP;
 typedef std::vector<unsigned long> DICT;
