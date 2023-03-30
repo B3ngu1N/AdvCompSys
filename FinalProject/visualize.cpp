@@ -1,4 +1,4 @@
-//g++ -std=c++11 hello_rectangle.cpp -L. -lp8g++ -Wl,-rpath=.
+//g++ -std=c++11 visualize.cpp -L. -lp8g++ -Wl,-rpath=.
 
 #include "p8g.hpp"
 
