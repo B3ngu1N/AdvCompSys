@@ -1,6 +1,6 @@
 //g++ -std=c++11 hello_rectangle.cpp -L. -lp8g++ -Wl,-rpath=.
 
-#include "include/p8g.hpp"
+#include "p8g.hpp"
 
 using namespace p8g;
 

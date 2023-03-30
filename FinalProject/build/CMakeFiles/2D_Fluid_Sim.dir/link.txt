@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/2D_Fluid_Sim.dir/hello_rectangle.cpp.o -o 2D_Fluid_Sim   -L/mnt/c/Users/tompe/Documents/Adv_Computer_Systems/AdvCompSys/FinalProject/lib  -Wl,-rpath,/mnt/c/Users/tompe/Documents/Adv_Computer_Systems/AdvCompSys/FinalProject/lib -lp8g 
