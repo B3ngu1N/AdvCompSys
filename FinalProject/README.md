@@ -11,8 +11,10 @@
 
 ## Visualization
 
-Using C++ library libxd to build 2D visualization of fluid.
+Using C++ library p8g to build 2D visualization of fluid (C++ Version of Processing).
 
+
+[p8g GitHub Repository](https://bernhardfritz.github.io/p8g/docs/get-started)
 
 ## Conclusions
 
