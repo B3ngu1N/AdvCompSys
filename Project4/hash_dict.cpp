@@ -205,7 +205,7 @@ void* findHelper(void* args)
 
     DICT::const_iterator itr_end = sargs->sBlock_itr + sargs->sBlock_Len;
     DICT::const_iterator itr_begin = sargs->sBlock_itr;
-    #pragma omp parallel for
+    #pragma omp parallel for target
     for(; sargs->sBlock_itr!=itr_end; sargs->sBlock_itr++){
         if(*(sargs->sBlock_itr) == sargs->hashVal){
             sargs->sBlock_Indices->push_back((unsigned long)(sargs->sBlock_itr - itr_begin) + sargs->start_index);
