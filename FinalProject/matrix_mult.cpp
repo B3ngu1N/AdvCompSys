@@ -9,15 +9,6 @@
 */
 
 #include "matrix_mult.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <iostream>
-#include <string>
-#include <bits/stdc++.h>
-#include <immintrin.h>
-#include <emmintrin.h>
-
 
 template <>
 void Matrix<float>::printMatrix()

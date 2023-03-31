@@ -5,6 +5,15 @@
     @author Ben Haft
     @date 3/30/2023
 */
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <iostream>
+#include <string>
+#include <bits/stdc++.h>
+#include <immintrin.h>
+#include <emmintrin.h>
+
 
 /*
   Custom matrix datatype/object to allow for ease of implementation for both 
@@ -19,6 +28,7 @@
 template <typename T>
 class Matrix {
  public:
+  Matrix();
  // Need to add padding to allocation to allow for 0s at end of rows and columns
  // to be a multiple of 256 bits
   Matrix(int matrix_dim) : rows_(matrix_dim), cols_(matrix_dim) {

@@ -4,6 +4,8 @@
 
 using namespace p8g;
 
+#define N 256
+
 void p8g::draw() {
 	    background(220);
 	        rect(50, 50, 100, 100);
