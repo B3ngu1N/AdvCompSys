@@ -1,5 +1,7 @@
 /*
-    2D Fluid Simulation with Navier-Stokes Equations
+    2D Fluid Simulation with Navier-Stokes Equations - Currently not Multithreaded/SIMD
+
+    Credit - Jos Stam & Mike Ash
 
     @author Thomas Petr
     @author Ben Haft
@@ -36,7 +38,20 @@ void Fluid2D::SimStep()
 
 void SetBoundaries(int b, Matrix<float>& in_x)
 {
+    for (int i = 1; i < N-1; i++) {
+        in_x(i, 0) = b == 2 ? -in_x(i, 1) : in_x(i, 1);
+        in_x(i, N-1) = b == 2 ? -in_x(i, N-2) : in_x(i, N-2);
+    }
 
+    for (int j = 1; j < N-1; j++) {
+        in_x(0, j) = b == 1 ? -in_x(1, j) : in_x(1, j);
+        in_x(N-1, j) = b == 1 ? -in_x(N-2, j) : in_x(N-2, j);
+    }
+
+    in_x(0, 0) = 0.5 * (in_x(1, 0) + in_x(0, 1));
+    in_x(0, N-1) = 0.5 * (in_x(1, N-1) + in_x(0, N-2));
+    in_x(N-1, 0) = 0.5 * (in_x(N-2, 0) + in_x(N-1, 1));
+    in_x(N-1, N-1) = 0.5 * (in_x(N-2, N-1) + in_x(N-1, N-2));
 }
 
 void LinSolve(int b, Matrix<float>& in_x, Matrix<float>& in_x0, float a, float c)
@@ -93,7 +108,44 @@ void Project(Matrix<float>& in_Vx, Matrix<float>& in_Vy, Matrix<float>& p, Matri
 
 void Advect(int b, Matrix<float>& d, Matrix<float>& d0, Matrix<float>& in_Vx, Matrix<float>& in_Vy, float in_dt)
 {
+    int jtmp = 1, itmp = 1;
+    int Ntmp = N - 2;
+    int dtX = in_dt * Ntmp, dtY = in_dt * Ntmp;
 
+    float tmp1, tmp2, tmp3;
+    int i_flr, i_ceil, j_flr, j_ceil;
+    float x, y, s0, s1, t0, t1;
+
+    for (int j = 1; j < N-1; j++, jtmp++) {
+        for (int i = 1; i < N-1; i++, itmp++) {
+            tmp1 = dtX * in_Vx(i, j);
+            tmp2 = dtY * in_Vy(i, j);
+            x = itmp - tmp1;
+            y = jtmp - tmp2;
+
+            if(x < 0.5) x = 0.5;
+            if(x > Ntmp + 0.5) x = Ntmp + 0.5;
+
+            i_flr = (int)floor(x);
+            i_ceil = i_flr + 1;
+            
+            if(y < 0.5) y = 0.5;
+            if(y > Ntmp + 0.5) y = Ntmp + 0.5;
+
+            j_flr = (int)floor(y);
+            j_ceil = j_flr + 1;
+
+            s1 = x - i_flr;
+            s0 = 1.0 - s1;
+            t1 = y - j_flr;
+            t0 = 1.0 - t1;
+
+            d(i, j) = s0 * (t0 * d0(i_flr, j_flr) + t1 * d0(i_flr, j_ceil)) +
+                        s1 * (t0 * d0(i_ceil, j_flr) + t1 * d0(i_ceil, j_ceil));
+        }
+    }
+
+    SetBoundaries(b, d);
 }
 
 
