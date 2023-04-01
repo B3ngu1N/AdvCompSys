@@ -8,6 +8,9 @@
 #include "matrix_mult.h"
 #include <stdlib.h>
 
+#define ITR 16
+#define N 256
+
 class Fluid2D {
   public:
     Fluid2D(int sim_dimension, float diffusion, float viscosity, float dt_) : 
@@ -30,17 +33,6 @@ class Fluid2D {
 
     void SimStep();
 
-    void SetBoundaries(int b);
-
-    void LinSolve(int b, float a, float c, int itr);
-
-    void Diffuse(int b, float diff, float dt, int itr);
-
-    void Project(int itr);
-
-    void Advect(int b, float dt);
-
-
   private:
     int size;
     float dt;
@@ -57,4 +49,17 @@ class Fluid2D {
     Matrix<float> density;
 
 };
+
+
+void SetBoundaries(int b, Matrix<float>& in_x);
+
+void LinSolve(int b, Matrix<float>& in_x, Matrix<float>& in_x0, float a, float c);
+
+void Diffuse(int b, Matrix<float>& in_x, Matrix<float>& in_x0, float in_diff, float in_dt);
+
+void Project(Matrix<float>& in_Vx, Matrix<float>& in_Vy, 
+              Matrix<float>& p, Matrix<float>& div);
+
+void Advect(int b, Matrix<float>& d, Matrix<float>& d0, Matrix<float>& in_Vx, 
+            Matrix<float>& in_Vy, float in_dt);
 
