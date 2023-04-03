@@ -7,11 +7,16 @@
     @author Ben Haft
     @date 3/30/2023
 */
+
+// #ifndef 2D_FLUID_H
+// #define 2D_FLUID_H
+
 #include "matrix_mult.h"
 #include <stdlib.h>
 
 #define ITR 16
 #define N 256
+#define SCALE 4
 
 class Fluid2D {
   public:
@@ -29,11 +34,13 @@ class Fluid2D {
     
     ~Fluid2D() {}
 
-    void AddDensityScalar(int x, int y, float amount);
+    void AddDensity(int x, int y, float amount);
 
-    void AddVelocityScalar(int x, int y, float amountX, float amountY);
+    void AddVelocity(int x, int y, float amountX, float amountY);
 
     void SimStep();
+
+    void RenderDensity();
 
   private:
     int size;
@@ -65,3 +72,5 @@ void Project(Matrix<float>& in_Vx, Matrix<float>& in_Vy,
 void Advect(int b, Matrix<float>& d, Matrix<float>& d0, Matrix<float>& in_Vx, 
             Matrix<float>& in_Vy, float in_dt);
 
+
+// #endif 2D_FLUID_H

@@ -10,12 +10,12 @@
 
 #include "2d_fluid.h"
 
-void Fluid2D::AddDensityScalar(int x, int y, float amount)
+void Fluid2D::AddDensity(int x, int y, float amount)
 {
     this->density(x, y) += amount;
 }
 
-void Fluid2D::AddVelocityScalar(int x, int y, float amountX, float amountY)
+void Fluid2D::AddVelocity(int x, int y, float amountX, float amountY)
 {
     this->Vx(x, y) += amountX;
     this->Vy(x, y) += amountY;
@@ -34,6 +34,11 @@ void Fluid2D::SimStep()
     Project(this->Vx, this->Vy, this->Vx0, this->Vy0);
     Diffuse(0, this->s, this->density, this->diff, this->dt);
     Advect(0, this->density, this->s, this->Vx, this->Vy, this->dt);
+}
+
+void Fluid2D::RenderDensity()
+{
+    
 }
 
 void SetBoundaries(int b, Matrix<float>& in_x)
