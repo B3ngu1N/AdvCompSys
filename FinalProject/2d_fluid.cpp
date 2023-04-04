@@ -10,6 +10,25 @@
 
 #include "2d_fluid.h"
 
+Fluid2D::Fluid2D(int sim_dimension, float diffusion, float viscosity, float dt_)
+{
+    this->size = sim_dimension;
+    this->diff = diffusion;
+    this->visc = viscosity;
+    this->dt = dt_;
+
+    this->temporary = Matrix<float>(sim_dimension);
+
+    this->Vx = Matrix<float>(sim_dimension);
+    this->Vy = Matrix<float>(sim_dimension);
+
+    this->Vx0 = Matrix<float>(sim_dimension);
+    this->Vy0 = Matrix<float>(sim_dimension);
+
+    this->s = Matrix<float>(sim_dimension);
+    this->density = Matrix<float>(sim_dimension);
+}
+
 void Fluid2D::AddDensity(int x, int y, float amount)
 {
     this->density(x, y) += amount;
@@ -38,7 +57,17 @@ void Fluid2D::SimStep()
 
 void Fluid2D::RenderDensity()
 {
-    
+    // p8g::colorMode(p8g::HSB);
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            int x = i * SCALE;
+            int y = j * SCALE;
+            float d = this->density(i, j);
+            p8g::fill(((int)d+50)%255, 200, (int)d);
+            p8g::noStroke();
+            p8g::rect(x, y, SCALE, SCALE);
+        }
+    }
 }
 
 void SetBoundaries(int b, Matrix<float>& in_x)
@@ -152,7 +181,4 @@ void Advect(int b, Matrix<float>& d, Matrix<float>& d0, Matrix<float>& in_Vx, Ma
 
     SetBoundaries(b, d);
 }
-
-
-
 

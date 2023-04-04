@@ -1,6 +1,5 @@
-//g++ -std=c++11 visualize.cpp -L. -lp8g++ -Wl,-rpath=.
+//g++ -std=c++11 visualize.cpp 2d_fluid.cpp matrix_mult.cpp -L. -lp8g++ -Wl,-rpath=. -mavx2 -o vis2d.o
 
-#include "p8g.hpp"
 #include "2d_fluid.h"
 
 using namespace p8g;
@@ -37,7 +36,7 @@ void p8g::mouseReleased() {}
 void p8g::mouseWheel(float delta) {}
 
 int main() {
-	// fluid = new Fluid2D(N, 0, 0.0000001, 0.2);
+	fluid = new Fluid2D(N, 0.0, 0.0000001, 0.2);
 
 	run(600, 600, "2D Fluid Simulation");
 

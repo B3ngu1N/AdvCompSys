@@ -8,29 +8,18 @@
     @date 3/30/2023
 */
 
-// #ifndef 2D_FLUID_H
-// #define 2D_FLUID_H
-
-#include "matrix_mult.h"
-#include <stdlib.h>
-
 #define ITR 16
 #define N 256
 #define SCALE 4
 
+#include "matrix_mult.h"
+#include <stdlib.h>
+#include "p8g.hpp"
+
+
 class Fluid2D {
   public:
-    Fluid2D(int sim_dimension, float diffusion, float viscosity, float dt_) : 
-            size(sim_dimension), dt(dt_), diff(diffusion), visc(viscosity) {
-        this->Vx = Matrix<float>(sim_dimension);
-        this->Vy = Matrix<float>(sim_dimension);
-
-        this->Vx0 = Matrix<float>(sim_dimension);
-        this->Vy0 = Matrix<float>(sim_dimension);
-
-        this->s = Matrix<float>(sim_dimension);
-        this->density = Matrix<float>(sim_dimension);
-    }
+    Fluid2D(int sim_dimension, float diffusion, float viscosity, float dt_);
     
     ~Fluid2D() {}
 
@@ -47,6 +36,8 @@ class Fluid2D {
     float dt;
     float diff;
     float visc;
+
+    Matrix<float> temporary;
 
     Matrix<float> Vx;
     Matrix<float> Vy;
@@ -73,4 +64,3 @@ void Advect(int b, Matrix<float>& d, Matrix<float>& d0, Matrix<float>& in_Vx,
             Matrix<float>& in_Vy, float in_dt);
 
 
-// #endif 2D_FLUID_H
