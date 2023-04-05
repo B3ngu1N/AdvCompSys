@@ -13,9 +13,7 @@
 #define SCALE 4
 
 #include "matrix_mult.h"
-#include <stdlib.h>
 #include "p8g.hpp"
-
 
 class Fluid2D {
   public:
@@ -31,13 +29,29 @@ class Fluid2D {
 
     void RenderDensity();
 
+    Matrix<float>& rxVx() {
+        return this->Vx;
+    }
+
+    Matrix<float>& rxVy() {
+        return this->Vy;
+    }
+
+    Matrix<float>& rxD() {
+        return this->density;
+    }
+
+    float* rxtmp() {
+        return this->tmp;
+    }
+
   private:
     int size;
     float dt;
     float diff;
     float visc;
 
-    Matrix<float> temporary;
+    float* tmp;
 
     Matrix<float> Vx;
     Matrix<float> Vy;

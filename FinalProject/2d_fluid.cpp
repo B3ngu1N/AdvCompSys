@@ -17,7 +17,8 @@ Fluid2D::Fluid2D(int sim_dimension, float diffusion, float viscosity, float dt_)
     this->visc = viscosity;
     this->dt = dt_;
 
-    this->temporary = Matrix<float>(sim_dimension);
+    this->tmp = (float*)malloc(sizeof(float) * 256 * 256);
+    memset(this->tmp, 0.0, sizeof(float) * 256 * 256);
 
     this->Vx = Matrix<float>(sim_dimension);
     this->Vy = Matrix<float>(sim_dimension);
@@ -57,13 +58,13 @@ void Fluid2D::SimStep()
 
 void Fluid2D::RenderDensity()
 {
-    // p8g::colorMode(p8g::HSB);
+    // p8g::colorMode(p8g::RGB);
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             int x = i * SCALE;
             int y = j * SCALE;
             float d = this->density(i, j);
-            p8g::fill(((int)d+50)%255, 200, (int)d);
+            p8g::fill(((int)d+50)%255, 0, (int)d); //x, 220, (int)d
             p8g::noStroke();
             p8g::rect(x, y, SCALE, SCALE);
         }
