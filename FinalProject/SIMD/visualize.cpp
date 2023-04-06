@@ -1,4 +1,4 @@
-//g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
+//g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -O3 -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
 
 #include "2d_fluid.h"
 
@@ -39,7 +39,7 @@ void p8g::mouseWheel(float delta) {}
 
 int main() 
 {
-    fluid = new Fluid2D(N, 0.0, 0.0000001, 0.2);
+    fluid = new Fluid2D(N, 0.0, 0.0000008, 0.2);
     t = 0;
 
 	run(600, 600, "2D Fluid Simulation");

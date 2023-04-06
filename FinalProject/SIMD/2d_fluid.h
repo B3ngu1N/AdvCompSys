@@ -17,6 +17,7 @@
 #include <iostream>
 #include <cmath>
 #include <cstring>
+#include <omp.h>
 // #include <immintrin.h>
 
 
