@@ -8,7 +8,7 @@
     @date 3/30/2023
 */
 
-#define ITR 8
+#define ITR 16
 #define N 256
 #define SCALE 4
 
@@ -24,7 +24,16 @@ class Fluid2D {
   public:
     Fluid2D(int sim_dimension, float diffusion, float viscosity, float dt_);
     
-    ~Fluid2D() {}
+    ~Fluid2D() {
+        delete[] this->Vx;
+        delete[] this->Vx0;
+
+        delete[] this->Vy;
+        delete[] this->Vy0;
+
+        delete[] this->density;
+        delete[] this->s;
+    }
 
     void AddDensity(int x, int y, float amount);
 
@@ -33,6 +42,8 @@ class Fluid2D {
     void SimStep();
 
     void RenderDensity();
+    void printDensity();
+    void printVelocity();
 
   private:
     int size;

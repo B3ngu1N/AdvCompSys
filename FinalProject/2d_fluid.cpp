@@ -58,6 +58,7 @@ void Fluid2D::SimStep()
     Advect(2, this->Vy, this->Vy0, this->Vx0, this->Vy0, this->dt);
 
     Project(this->Vx, this->Vy, this->Vx0, this->Vy0);
+
     Diffuse(0, this->s, this->density, this->diff, this->dt);
     Advect(0, this->density, this->s, this->Vx, this->Vy, this->dt);
 }
@@ -75,6 +76,28 @@ void Fluid2D::RenderDensity()
             p8g::rect(x, y, SCALE, SCALE);
         }
     }
+}
+
+void Fluid2D::printDensity()
+{
+    for (int j = 0; j < N; j++) {
+        for (int i = 0; i < N; i++) {
+            std::cout << this->density[IX(i, j)] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+void Fluid2D::printVelocity()
+{
+    for (int j = 0; j < N; j++) {
+        for (int i = 0; i < N; i++) {
+            std::cout << this->Vx[IX(i, j)] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 int IX(int i, int j)
@@ -147,8 +170,10 @@ void Project(float* in_Vx, float* in_Vy, float* p, float* div)
 
     for (int j = 1; j < N-1; j++) {
         for (int i = 1; i < N-1; i++) {
-            in_Vx[IX(i, j)] -= 0.5 * (p[IX(i+1, j)] - p[IX(i-1, j)]) * N;
-            in_Vy[IX(i, j)] -= 0.5 * (p[IX(i, j+1)] - p[IX(i, j-1)]) * N;
+            in_Vx[IX(i, j)] -= 0.5 * (p[IX(i+1, j)] 
+                                    - p[IX(i-1, j)]) * N;
+            in_Vy[IX(i, j)] -= 0.5 * (p[IX(i, j+1)] 
+                                    - p[IX(i, j-1)]) * N;
         }
     }
 
@@ -158,16 +183,16 @@ void Project(float* in_Vx, float* in_Vy, float* p, float* div)
 
 void Advect(int b, float* d, float* d0, float* in_Vx, float* in_Vy, float in_dt)
 {
-    int jtmp = 1, itmp = 1;
-    int Ntmp = N - 2;
-    int dtX = in_dt * Ntmp, dtY = in_dt * Ntmp;
+    int j, jtmp, i, itmp;
+    float Ntmp = N - 2;
+    float dtX = in_dt * Ntmp, dtY = in_dt * Ntmp;
 
     float tmp1, tmp2, tmp3;
-    int i_flr, i_ceil, j_flr, j_ceil;
+    float i_flr, i_ceil, j_flr, j_ceil;
     float x, y, s0, s1, t0, t1;
 
-    for (int j = 1; j < N-1; j++, jtmp++) {
-        for (int i = 1; i < N-1; i++, itmp++) {
+    for (j = 1, jtmp = 1; j < N-1; j++, jtmp++) {
+        for (i = 1, itmp = 1; i < N-1; i++, itmp++) {
             tmp1 = dtX * in_Vx[IX(i, j)];
             tmp2 = dtY * in_Vy[IX(i, j)];
             x = (float)itmp - tmp1;
@@ -176,13 +201,13 @@ void Advect(int b, float* d, float* d0, float* in_Vx, float* in_Vy, float in_dt)
             if(x < 0.5) x = 0.5;
             if(x > Ntmp + 0.5) x = Ntmp + 0.5;
 
-            i_flr = (int)floor(x);
+            i_flr = floor(x);
             i_ceil = i_flr + 1;
             
             if(y < 0.5) y = 0.5;
             if(y > Ntmp + 0.5) y = Ntmp + 0.5;
 
-            j_flr = (int)floor(y);
+            j_flr = floor(y);
             j_ceil = j_flr + 1;
 
             s1 = x - i_flr;

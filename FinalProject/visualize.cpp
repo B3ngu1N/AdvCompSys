@@ -1,4 +1,4 @@
-//g++ -std=c++11 visualize.cpp 2d_fluid.cpp matrix_mult.cpp -g -L. -lp8g++ -Wl,-rpath=. -mavx2 -o vis2d.o
+//g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
 
 #include "2d_fluid.h"
 
@@ -8,7 +8,6 @@ Fluid2D* fluid;
 
 void p8g::draw() {
     colorMode(p8g::HSB);
-	// background(220);
 	stroke(52);
 	strokeWeight(2);
 
@@ -21,10 +20,11 @@ void p8g::draw() {
 	}
 
 	for (int i = 0; i < 2; i++) {
-		fluid->AddVelocity(cx, cy, 10.2, 0.2);
+		fluid->AddVelocity(cx, cy, 0.2, 0);
 	}
-	fluid->SimStep();
-	fluid->RenderDensity();
+    
+	fluid->SimStep();	
+    fluid->RenderDensity();
 }
 
 void p8g::keyPressed() {}
