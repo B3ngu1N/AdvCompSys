@@ -40,14 +40,14 @@ int main()
 {
 	fluid = new Fluid2D(N, 0.0, 0.0000001, 0.2);
 
-    for(int i = 0; i < N*N; i++){
-        std::cout << fluid->rxtmp()[i] << "  ";
-        if(i%256==0) std::cout << std::endl;
-    }
-    fluid->rxVx().printMatrix();
-    fluid->rxVy().printMatrix();
+    // for(int i = 0; i < N*N; i++){
+    //     std::cout << fluid->rxtmp()[i] << "  ";
+    //     if(i%256==0) std::cout << std::endl;
+    // }
+    // fluid->rxVx().printMatrix();
+    // fluid->rxVy().printMatrix();
 
-    fluid->rxD().printMatrix();
+    // fluid->rxD().printMatrix();
 
 
 	run(600, 600, "2D Fluid Simulation");
