@@ -8,12 +8,17 @@
     @date 3/30/2023
 */
 
-#define ITR 16
+#define ITR 8
 #define N 256
 #define SCALE 4
 
-#include "matrix_mult.h"
 #include "p8g.hpp"
+
+#include <iostream>
+#include <random>
+#include <cstring>
+// #include <immintrin.h>
+
 
 class Fluid2D {
   public:
@@ -29,52 +34,35 @@ class Fluid2D {
 
     void RenderDensity();
 
-    Matrix<float>& rxVx() {
-        return this->Vx;
-    }
-
-    Matrix<float>& rxVy() {
-        return this->Vy;
-    }
-
-    Matrix<float>& rxD() {
-        return this->density;
-    }
-
-    float* rxtmp() {
-        return this->tmp;
-    }
-
   private:
     int size;
     float dt;
     float diff;
     float visc;
 
-    float* tmp;
+    float* Vx;
+    float* Vy;
 
-    Matrix<float> Vx;
-    Matrix<float> Vy;
+    float* Vx0;
+    float* Vy0;
 
-    Matrix<float> Vx0;
-    Matrix<float> Vy0;
-
-    Matrix<float> s;
-    Matrix<float> density;
+    float* s;
+    float* density;
 
 };
 
+int IX(int i, int j);
 
-void SetBoundaries(int b, Matrix<float>& in_x);
+void SetBoundaries(int b, float* in_x);
 
-void LinSolve(int b, Matrix<float>& in_x, Matrix<float>& in_x0, float a, float c);
+void LinSolve(int b, float* in_x, float* in_x0, float a, float c);
 
-void Diffuse(int b, Matrix<float>& in_x, Matrix<float>& in_x0, float in_diff, float in_dt);
+void Diffuse(int b, float* in_x, float* in_x0, float in_diff, float in_dt);
 
-void Project(Matrix<float>& in_Vx, Matrix<float>& in_Vy, 
-              Matrix<float>& p, Matrix<float>& div);
+void Project(float* in_Vx, float* in_Vy, 
+              float* p, float* div);
 
-void Advect(int b, Matrix<float>& d, Matrix<float>& d0, Matrix<float>& in_Vx, 
-            Matrix<float>& in_Vy, float in_dt);
+void Advect(int b, float* d, float* d0, float* in_Vx, 
+            float* in_Vy, float in_dt);
 
 

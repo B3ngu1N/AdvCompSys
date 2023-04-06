@@ -17,28 +17,34 @@ Fluid2D::Fluid2D(int sim_dimension, float diffusion, float viscosity, float dt_)
     this->visc = viscosity;
     this->dt = dt_;
 
-    this->tmp = (float*)malloc(sizeof(float) * 256 * 256);
-    memset(this->tmp, 0.0, sizeof(float) * 256 * 256);
+    this->Vx = (float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
+    memset(this->Vx, 0.0, sizeof(float) * sim_dimension * sim_dimension);
 
-    this->Vx = Matrix<float>(sim_dimension);
-    this->Vy = Matrix<float>(sim_dimension);
+    this->Vy = (float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
+    memset(this->Vy, 0.0, sizeof(float) * sim_dimension * sim_dimension);
 
-    this->Vx0 = Matrix<float>(sim_dimension);
-    this->Vy0 = Matrix<float>(sim_dimension);
+    this->Vx0 = (float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
+    memset(this->Vx0, 0.0, sizeof(float) * sim_dimension * sim_dimension);
 
-    this->s = Matrix<float>(sim_dimension);
-    this->density = Matrix<float>(sim_dimension);
+    this->Vy0 = (float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
+    memset(this->Vy0, 0.0, sizeof(float) * sim_dimension * sim_dimension);
+
+    this->s = (float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
+    memset(this->s, 0.0, sizeof(float) * sim_dimension * sim_dimension);
+
+    this->density =(float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
+    memset(this->density, 0.0, sizeof(float) * sim_dimension * sim_dimension);
 }
 
 void Fluid2D::AddDensity(int x, int y, float amount)
 {
-    this->density(x, y) += amount;
+    this->density[IX(x, y)] += amount;
 }
 
 void Fluid2D::AddVelocity(int x, int y, float amountX, float amountY)
 {
-    this->Vx(x, y) += amountX;
-    this->Vy(x, y) += amountY;
+    this->Vx[IX(x, y)] += amountX;
+    this->Vy[IX(x, y)] += amountY;
 }
 
 void Fluid2D::SimStep()
@@ -58,48 +64,57 @@ void Fluid2D::SimStep()
 
 void Fluid2D::RenderDensity()
 {
-    // p8g::colorMode(p8g::RGB);
+    p8g::colorMode(p8g::HSB);
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             int x = i * SCALE;
             int y = j * SCALE;
-            float d = this->density(i, j);
-            p8g::fill(((int)d+50)%255, 0, (int)d); //x, 220, (int)d
+            float d = this->density[IX(i, j)];
+            p8g::fill(((int)d+50)%255, 200, (int)d); //x, 220, (int)d
             p8g::noStroke();
             p8g::rect(x, y, SCALE, SCALE);
         }
     }
 }
 
-void SetBoundaries(int b, Matrix<float>& in_x)
+int IX(int i, int j)
+{
+    return i + j*N;
+}
+
+void SetBoundaries(int b, float* in_x)
 {
     for (int i = 1; i < N-1; i++) {
-        in_x(i, 0) = b == 2 ? -in_x(i, 1) : in_x(i, 1);
-        in_x(i, N-1) = b == 2 ? -in_x(i, N-2) : in_x(i, N-2);
+        in_x[IX(i, 0)] = b == 2 ? -in_x[IX(i, 1)] : in_x[IX(i, 1)];
+        in_x[IX(i, N-1)] = b == 2 ? -in_x[IX(i, N-2)] : in_x[IX(i, N-2)];
     }
 
     for (int j = 1; j < N-1; j++) {
-        in_x(0, j) = b == 1 ? -in_x(1, j) : in_x(1, j);
-        in_x(N-1, j) = b == 1 ? -in_x(N-2, j) : in_x(N-2, j);
+        in_x[IX(0, j)] = b == 1 ? -in_x[IX(1, j)] : in_x[IX(1, j)];
+        in_x[IX(N-1, j)] = b == 1 ? -in_x[IX(N-2, j)] : in_x[IX(N-2, j)];
     }
 
-    in_x(0, 0) = 0.5 * (in_x(1, 0) + in_x(0, 1));
-    in_x(0, N-1) = 0.5 * (in_x(1, N-1) + in_x(0, N-2));
-    in_x(N-1, 0) = 0.5 * (in_x(N-2, 0) + in_x(N-1, 1));
-    in_x(N-1, N-1) = 0.5 * (in_x(N-2, N-1) + in_x(N-1, N-2));
+    in_x[IX(0, 0)] = 0.5 * (in_x[IX(1, 0)] 
+                            + in_x[IX(0, 1)]);
+    in_x[IX(0, N-1)] = 0.5 * (in_x[IX(1, N-1)] 
+                            + in_x[IX(0, N-2)]);
+    in_x[IX(N-1, 0)] = 0.5 * (in_x[IX(N-2, 0)] 
+                            + in_x[IX(N-1, 1)]);
+    in_x[IX(N-1, N-1)] = 0.5 * (in_x[IX(N-2, N-1)] 
+                            + in_x[IX(N-1, N-2)]);
 }
 
-void LinSolve(int b, Matrix<float>& in_x, Matrix<float>& in_x0, float a, float c)
+void LinSolve(int b, float* in_x, float* in_x0, float a, float c)
 {
     float cRecip = 1.0 / c;
     for (int t = 0; t < ITR; t++) {
         for (int j = 1; j < N-1; j++) {
             for (int i = 1; i < N-1; i++) {
-                in_x(i, j) = (in_x0(i, j) +
-                                a * (in_x(i+1, j) +
-                                    in_x(i-1, j) +
-                                    in_x(i, j+1) +
-                                    in_x(i, j-1))) * 
+                in_x[IX(i, j)] = (in_x0[IX(i, j)] +
+                                a * (in_x[IX(i+1, j)] +
+                                    in_x[IX(i-1, j)] +
+                                    in_x[IX(i, j+1)] +
+                                    in_x[IX(i, j-1)])) * 
                                 cRecip;
             }
         }
@@ -107,22 +122,22 @@ void LinSolve(int b, Matrix<float>& in_x, Matrix<float>& in_x0, float a, float c
     }
 }
 
-void Diffuse(int b, Matrix<float>& in_x, Matrix<float>& in_x0, float in_diff, float in_dt)
+void Diffuse(int b, float* in_x, float* in_x0, float in_diff, float in_dt)
 {
     float a = in_dt * in_diff * (N - 2) * (N - 2);
     LinSolve(b, in_x, in_x0, a, 1 + 6 * a);
 }
 
-void Project(Matrix<float>& in_Vx, Matrix<float>& in_Vy, Matrix<float>& p, Matrix<float>& div)
+void Project(float* in_Vx, float* in_Vy, float* p, float* div)
 {
     for (int j = 1; j < N-1; j++) {
         for (int i = 1; i < N-1; i++) {
-            div(i, j) = (-0.5 *
-                            (in_Vx(i+1, j) -
-                            in_Vx(i-1, j) +
-                            in_Vy(i, j+1) -
-                            in_Vy(i, j-1))) / N;
-            p(i, j) = 0.0;
+            div[IX(i, j)] = (-0.5 *
+                            (in_Vx[IX(i+1, j)] -
+                            in_Vx[IX(i-1, j)] +
+                            in_Vy[IX(i, j+1)] -
+                            in_Vy[IX(i, j-1)])) / N;
+            p[IX(i, j)] = 0.0;
         }
     }
 
@@ -132,8 +147,8 @@ void Project(Matrix<float>& in_Vx, Matrix<float>& in_Vy, Matrix<float>& p, Matri
 
     for (int j = 1; j < N-1; j++) {
         for (int i = 1; i < N-1; i++) {
-            in_Vx(i, j) -= 0.5 * (p(i+1, j) - p(i-1, j)) * N;
-            in_Vy(i, j) -= 0.5 * (p(i, j+1) - p(i, j-1)) * N;
+            in_Vx[IX(i, j)] -= 0.5 * (p[IX(i+1, j)] - p[IX(i-1, j)]) * N;
+            in_Vy[IX(i, j)] -= 0.5 * (p[IX(i, j+1)] - p[IX(i, j-1)]) * N;
         }
     }
 
@@ -141,7 +156,7 @@ void Project(Matrix<float>& in_Vx, Matrix<float>& in_Vy, Matrix<float>& p, Matri
     SetBoundaries(2, in_Vy);
 }
 
-void Advect(int b, Matrix<float>& d, Matrix<float>& d0, Matrix<float>& in_Vx, Matrix<float>& in_Vy, float in_dt)
+void Advect(int b, float* d, float* d0, float* in_Vx, float* in_Vy, float in_dt)
 {
     int jtmp = 1, itmp = 1;
     int Ntmp = N - 2;
@@ -153,10 +168,10 @@ void Advect(int b, Matrix<float>& d, Matrix<float>& d0, Matrix<float>& in_Vx, Ma
 
     for (int j = 1; j < N-1; j++, jtmp++) {
         for (int i = 1; i < N-1; i++, itmp++) {
-            tmp1 = dtX * in_Vx(i, j);
-            tmp2 = dtY * in_Vy(i, j);
-            x = itmp - tmp1;
-            y = jtmp - tmp2;
+            tmp1 = dtX * in_Vx[IX(i, j)];
+            tmp2 = dtY * in_Vy[IX(i, j)];
+            x = (float)itmp - tmp1;
+            y = (float)jtmp - tmp2;
 
             if(x < 0.5) x = 0.5;
             if(x > Ntmp + 0.5) x = Ntmp + 0.5;
@@ -175,8 +190,8 @@ void Advect(int b, Matrix<float>& d, Matrix<float>& d0, Matrix<float>& in_Vx, Ma
             t1 = y - j_flr;
             t0 = 1.0 - t1;
 
-            d(i, j) = s0 * (t0 * d0(i_flr, j_flr) + t1 * d0(i_flr, j_ceil)) +
-                        s1 * (t0 * d0(i_ceil, j_flr) + t1 * d0(i_ceil, j_ceil));
+            d[IX(i, j)] = s0 * (t0 * d0[IX(i_flr, j_flr)] + t1 * d0[IX(i_flr, j_ceil)]) +
+                        s1 * (t0 * d0[IX(i_ceil, j_flr)] + t1 * d0[IX(i_ceil, j_ceil)]);
         }
     }
 
