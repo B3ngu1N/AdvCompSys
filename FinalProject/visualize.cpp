@@ -5,6 +5,7 @@
 using namespace p8g;
 
 Fluid2D* fluid;
+float t;
 
 void p8g::draw() {
     colorMode(p8g::HSB);
@@ -19,12 +20,14 @@ void p8g::draw() {
 		}
 	}
 
-	for (int i = 0; i < 2; i++) {
-		fluid->AddVelocity(cx, cy, 0.2, 0);
-	}
+    float angle = M_PI * t/180.0;
+    float xVec = cos(angle);
+    float yVec = sin(angle);
+    fluid->AddVelocity(cx, cy, xVec, yVec);
     
-	fluid->SimStep();	
+	fluid->SimStep();
     fluid->RenderDensity();
+    t += 2;
 }
 
 void p8g::keyPressed() {}
@@ -36,8 +39,8 @@ void p8g::mouseWheel(float delta) {}
 
 int main() 
 {
-	// fluid = new Fluid2D(N, 0.0, 0.0000001, 0.2);
     fluid = new Fluid2D(N, 0.0, 0.0000001, 0.2);
+    t = 0;
 
 	run(600, 600, "2D Fluid Simulation");
 

@@ -15,7 +15,7 @@
 #include "p8g.hpp"
 
 #include <iostream>
-#include <random>
+#include <cmath>
 #include <cstring>
 // #include <immintrin.h>
 
