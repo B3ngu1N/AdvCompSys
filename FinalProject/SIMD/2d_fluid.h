@@ -9,8 +9,8 @@
 */
 
 #define ITR 16
-#define N 256
-#define SCALE 4
+#define N 512
+#define SCALE 2
 
 #include "p8g.hpp"
 

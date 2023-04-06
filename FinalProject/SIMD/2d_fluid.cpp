@@ -71,7 +71,7 @@ void Fluid2D::RenderDensity()
             int x = i * SCALE;
             int y = j * SCALE;
             float d = this->density[IX(i, j)];
-            p8g::fill(((int)d+50)%255, 200, (int)d); //x, 220, (int)d
+            p8g::fill(((int)d+50)%255, 0, (int)d); //x, 220, (int)d
             p8g::noStroke();
             p8g::rect(x, y, SCALE, SCALE);
         }
@@ -107,13 +107,13 @@ int IX(int i, int j)
 
 void SetBoundaries(int b, float* in_x)
 {
-    // #pragma omp parallel for
+    // #pragma omp parallel loop
     for (int i = 1; i < N-1; i++) {
         in_x[IX(i, 0)] = b == 2 ? -in_x[IX(i, 1)] : in_x[IX(i, 1)];
         in_x[IX(i, N-1)] = b == 2 ? -in_x[IX(i, N-2)] : in_x[IX(i, N-2)];
     }
 
-    // #pragma omp parallel for
+    // #pragma omp parallel loop
     for (int j = 1; j < N-1; j++) {
         in_x[IX(0, j)] = b == 1 ? -in_x[IX(1, j)] : in_x[IX(1, j)];
         in_x[IX(N-1, j)] = b == 1 ? -in_x[IX(N-2, j)] : in_x[IX(N-2, j)];
@@ -132,6 +132,7 @@ void SetBoundaries(int b, float* in_x)
 void LinSolve(int b, float* in_x, float* in_x0, float a, float c)
 {
     float cRecip = 1.0 / c;
+    #pragma omp parallel loop
     for (int t = 0; t < ITR; t++) {
         for (int j = 1; j < N-1; j++) {
             for (int i = 1; i < N-1; i++) {
@@ -155,6 +156,7 @@ void Diffuse(int b, float* in_x, float* in_x0, float in_diff, float in_dt)
 
 void Project(float* in_Vx, float* in_Vy, float* p, float* div)
 {
+    #pragma omp parallel loop
     for (int j = 1; j < N-1; j++) {
         for (int i = 1; i < N-1; i++) {
             div[IX(i, j)] = (-0.5 *
@@ -170,6 +172,7 @@ void Project(float* in_Vx, float* in_Vy, float* p, float* div)
     SetBoundaries(0, p);
     LinSolve(0, p, div, 1, 6);
 
+    #pragma omp parallel loop
     for (int j = 1; j < N-1; j++) {
         for (int i = 1; i < N-1; i++) {
             in_Vx[IX(i, j)] -= 0.5 * (p[IX(i+1, j)] 
@@ -193,6 +196,7 @@ void Advect(int b, float* d, float* d0, float* in_Vx, float* in_Vy, float in_dt)
     float i_flr, i_ceil, j_flr, j_ceil;
     float x, y, s0, s1, t0, t1;
 
+    // #pragma omp parallel loop
     for (j = 1, jtmp = 1; j < N-1; j++, jtmp++) {
         for (i = 1, itmp = 1; i < N-1; i++, itmp++) {
             tmp1 = dtX * in_Vx[IX(i, j)];

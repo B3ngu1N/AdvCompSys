@@ -71,7 +71,7 @@ void Fluid2D::RenderDensity()
             int x = i * SCALE;
             int y = j * SCALE;
             float d = this->density[IX(i, j)];
-            p8g::fill(((int)d+50)%255, 200, (int)d); //x, 220, (int)d
+            p8g::fill(((int)d+50)%255, 0, (int)d); //x, 220, (int)d
             p8g::noStroke();
             p8g::rect(x, y, SCALE, SCALE);
         }
