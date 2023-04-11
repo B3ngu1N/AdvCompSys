@@ -1,4 +1,5 @@
-//g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -O3 -fopenmp -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
+// g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -O3 -fopenmp -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
+// ./vis2d.o 512 10
 
 #include "2d_fluid.h"
 
@@ -6,6 +7,11 @@ using namespace p8g;
 
 Fluid2D* fluid;
 float t;
+int fps;
+
+double first10fps[10];
+double first10itr[10];
+int count = 0;
 
 void p8g::draw() {
     colorMode(p8g::HSB);
@@ -28,10 +34,38 @@ void p8g::draw() {
 			fluid->AddVelocity(cx + i, cy + j, xVec, yVec);
 		}
 	}
+	clock_t start, end;
     
+	// Timer Start
+    start = clock();
+
 	fluid->SimStep();
     fluid->RenderDensity();
     t += 1;
+
+	// Timer End
+    end = clock();
+
+	// Calculating time taken by the program for one frame.
+    double time_taken = (double)(end - start) / CLOCKS_PER_SEC;
+
+	// Convert to Calculations per 1 second (Calculated Frames Per Second)
+	double calc_fps = 1.0 / time_taken;
+
+	// Save to Array to Print when Window Closed
+	if (!first10fps[9]){
+		first10fps[count] = calc_fps;
+		first10itr[count] = ITR;
+		count++;
+	}
+
+	// Compare to Ideal User-Defined FPS, Set ITR (Depth) Accordingly
+	if (calc_fps > fps){
+		ITR++;
+	}
+	else if (ITR > 0){
+		ITR--;
+	}
 }
 
 void p8g::keyPressed() {}
@@ -41,12 +75,35 @@ void p8g::mousePressed() {}
 void p8g::mouseReleased() {}
 void p8g::mouseWheel(float delta) {}
 
-int main() 
+void printarray(double array[]) {
+    int i;
+    for(i = 0; i < 10; i++) {
+        printf("%.2f\n",array[i]);
+    }
+}
+
+int main(int argc, char** argv) 
 {
+	const char* const exeName = argv[0]; // Name of file to execute
+
+    if (argc != 3) { // Need 3 runtime arguments
+        printf("Wrong Arguments\n");
+        printf("%s SIMULATION_SIZE FRAMES_PER_SECOND\n", exeName);
+        return 1;
+    }
+
+	int size = atoi(argv[1]);
+	N = size;
+
+	fps = atoi(argv[2]);
+
     fluid = new Fluid2D(N, 0.0, 0.0000001, 0.2);
     t = 0;
 
 	run(600, 600, "2D Fluid Simulation");
+
+	printarray(first10fps);
+	printarray(first10itr);
 
 	return 0;
 }

@@ -8,8 +8,8 @@
     @date 3/30/2023
 */
 
-#define ITR 16
-#define N 512
+int ITR = 16;
+int N = 512;
 #define SCALE 2
 
 #include "p8g.hpp"
