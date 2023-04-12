@@ -10,6 +10,9 @@
 
 #include "2d_fluid.h"
 
+int ITR = 16;
+int N = 512;
+
 Fluid2D::Fluid2D(int sim_dimension, float diffusion, float viscosity, float dt_)
 {
     this->size = sim_dimension;
@@ -103,6 +106,16 @@ void Fluid2D::printVelocity()
 int IX(int i, int j)
 {
     return i + j*N;
+}
+
+void setN(int input)
+{
+    N = input;
+}
+
+void setITR(int input)
+{
+    ITR = input;
 }
 
 void SetBoundaries(int b, float* in_x)

@@ -1,6 +1,18 @@
 // g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -O3 -fopenmp -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
 // ./vis2d.o 512 10
 
+// sudo apt install mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev
+
+
+/* For Windows 10 (pain)
+	Use VcXsrv/XLaunch to setup OpenGL + Following Commands (see link for more info)
+
+	export DISPLAY=$(awk '/nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null):0
+	export LIBGL_ALWAYS_INDIRECT=0
+
+	https://gist.github.com/Mluckydwyer/8df7782b1a6a040e5d01305222149f3c
+*/
+
 #include "2d_fluid.h"
 
 using namespace p8g;
@@ -8,6 +20,8 @@ using namespace p8g;
 Fluid2D* fluid;
 float t;
 int fps;
+extern int N;
+extern int ITR;
 
 double first10fps[10];
 double first10itr[10];
@@ -61,10 +75,10 @@ void p8g::draw() {
 
 	// Compare to Ideal User-Defined FPS, Set ITR (Depth) Accordingly
 	if (calc_fps > fps){
-		ITR++;
+		setITR(ITR + 1);
 	}
 	else if (ITR > 0){
-		ITR--;
+		setITR(ITR + 1);
 	}
 }
 
@@ -93,7 +107,7 @@ int main(int argc, char** argv)
     }
 
 	int size = atoi(argv[1]);
-	N = size;
+	setN(size);
 
 	fps = atoi(argv[2]);
 

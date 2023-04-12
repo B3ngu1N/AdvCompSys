@@ -8,8 +8,6 @@
     @date 3/30/2023
 */
 
-int ITR = 16;
-int N = 512;
 #define SCALE 2
 
 #include "p8g.hpp"
@@ -64,6 +62,10 @@ class Fluid2D {
 };
 
 int IX(int i, int j);
+
+void setN(int input);
+
+void setITR(int input);
 
 void SetBoundaries(int b, float* in_x);
 
