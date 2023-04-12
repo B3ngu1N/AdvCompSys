@@ -8,7 +8,7 @@
     @date 3/30/2023
 */
 
-#define SCALE 2
+#define SCALE 3
 
 #include "p8g.hpp"
 
@@ -62,10 +62,6 @@ class Fluid2D {
 };
 
 int IX(int i, int j);
-
-void setN(int input);
-
-void setITR(int input);
 
 void SetBoundaries(int b, float* in_x);
 

@@ -75,10 +75,10 @@ void p8g::draw() {
 
 	// Compare to Ideal User-Defined FPS, Set ITR (Depth) Accordingly
 	if (calc_fps > fps){
-		setITR(ITR + 1);
+		ITR++;
 	}
-	else if (ITR > 0){
-		setITR(ITR + 1);
+	else if (ITR > 1){
+		ITR--;
 	}
 }
 
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     }
 
 	int size = atoi(argv[1]);
-	setN(size);
+	N = size;
 
 	fps = atoi(argv[2]);
 

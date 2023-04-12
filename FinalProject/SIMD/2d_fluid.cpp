@@ -108,25 +108,15 @@ int IX(int i, int j)
     return i + j*N;
 }
 
-void setN(int input)
-{
-    N = input;
-}
-
-void setITR(int input)
-{
-    ITR = input;
-}
-
 void SetBoundaries(int b, float* in_x)
 {
-    // #pragma omp parallel loop
+    #pragma omp parallel loop
     for (int i = 1; i < N-1; i++) {
         in_x[IX(i, 0)] = b == 2 ? -in_x[IX(i, 1)] : in_x[IX(i, 1)];
         in_x[IX(i, N-1)] = b == 2 ? -in_x[IX(i, N-2)] : in_x[IX(i, N-2)];
     }
 
-    // #pragma omp parallel loop
+    #pragma omp parallel loop
     for (int j = 1; j < N-1; j++) {
         in_x[IX(0, j)] = b == 1 ? -in_x[IX(1, j)] : in_x[IX(1, j)];
         in_x[IX(N-1, j)] = b == 1 ? -in_x[IX(N-2, j)] : in_x[IX(N-2, j)];
