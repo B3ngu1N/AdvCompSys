@@ -1,10 +1,22 @@
-// g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -O3 -fopenmp -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
-// ./vis2d.o 512 10
+/*
+	2D Fluid Simulation with Navier-Stokes Equations - 2D Visualization
+	using p8g c++ library for 2D rendering.
 
-// sudo apt install mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev
+    @author Thomas Petr
+    @author Ben Haft
+    @date 3/30/2023
+
+	Compilation:
+	g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -O3 -mavx2 -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
+	
+	Running: ./vis2d.o <matrix-size> <target-fps>
+	./vis2d.o 512 10
+
+	If having troubles with GLX (OpenGL):
+		sudo apt install mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev
 
 
-/* For Windows 10 (pain)
+	For Windows 10 (pain):
 	Use VcXsrv/XLaunch to setup OpenGL + Following Commands (see link for more info)
 
 	export DISPLAY=$(awk '/nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null):0

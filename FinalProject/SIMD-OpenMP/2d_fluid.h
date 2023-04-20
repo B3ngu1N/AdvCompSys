@@ -8,7 +8,7 @@
     @date 3/30/2023
 */
 
-#define SCALE 3
+#define SCALE 2
 
 #include "p8g.hpp"
 
@@ -16,8 +16,6 @@
 #include <cmath>
 #include <cstring>
 #include <omp.h>
-// #include <immintrin.h>
-
 
 class Fluid2D {
   public:
