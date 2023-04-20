@@ -33,6 +33,7 @@ Fluid2D* fluid;
 float t;
 int fps;
 extern int N;
+extern int PAD_N;
 extern int ITR;
 
 double first10fps[10];
@@ -120,6 +121,9 @@ int main(int argc, char** argv)
 
 	int size = atoi(argv[1]);
 	N = size;
+
+	int segment_breakup = 256/(sizeof(float)*8);
+    int PAD_N = ceil((float)N/segment_breakup) * segment_breakup + 8; //adding 8 to PAD for AVX loads/computations
 
 	fps = atoi(argv[2]);
 

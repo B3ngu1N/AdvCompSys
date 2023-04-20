@@ -39,11 +39,13 @@ class Fluid2D {
     void SimStep();
 
     void RenderDensity();
+
     void printDensity();
     void printVelocity();
 
   private:
     int size;
+    int pad_size;
     float dt;
     float diff;
     float visc;

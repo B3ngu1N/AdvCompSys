@@ -12,6 +12,7 @@
 
 int ITR = 16;
 int N = 512;
+int PAD_N = 520;
 
 Fluid2D::Fluid2D(int sim_dimension, float diffusion, float viscosity, float dt_)
 {
@@ -20,23 +21,27 @@ Fluid2D::Fluid2D(int sim_dimension, float diffusion, float viscosity, float dt_)
     this->visc = viscosity;
     this->dt = dt_;
 
-    this->Vx = (float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
-    memset(this->Vx, 0.0, sizeof(float) * sim_dimension * sim_dimension);
+    int segment_breakup = 256/(sizeof(float)*8);
+    int padding_dim = ceil((float)sim_dimension/segment_breakup) * segment_breakup + 8; //+8 for AVX loads/compute
+    this->pad_size = padding_dim;
 
-    this->Vy = (float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
-    memset(this->Vy, 0.0, sizeof(float) * sim_dimension * sim_dimension);
+    this->Vx = (float*)malloc(sizeof(float) * padding_dim * padding_dim);
+    memset(this->Vx, 0.0, sizeof(float) * padding_dim * padding_dim);
 
-    this->Vx0 = (float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
-    memset(this->Vx0, 0.0, sizeof(float) * sim_dimension * sim_dimension);
+    this->Vy = (float*)malloc(sizeof(float) * padding_dim * padding_dim);
+    memset(this->Vy, 0.0, sizeof(float) * padding_dim * padding_dim);
 
-    this->Vy0 = (float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
-    memset(this->Vy0, 0.0, sizeof(float) * sim_dimension * sim_dimension);
+    this->Vx0 = (float*)malloc(sizeof(float) * padding_dim * padding_dim);
+    memset(this->Vx0, 0.0, sizeof(float) * padding_dim * padding_dim);
 
-    this->s = (float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
-    memset(this->s, 0.0, sizeof(float) * sim_dimension * sim_dimension);
+    this->Vy0 = (float*)malloc(sizeof(float) * padding_dim * padding_dim);
+    memset(this->Vy0, 0.0, sizeof(float) * padding_dim * padding_dim);
 
-    this->density =(float*)malloc(sizeof(float) * sim_dimension * sim_dimension);
-    memset(this->density, 0.0, sizeof(float) * sim_dimension * sim_dimension);
+    this->s = (float*)malloc(sizeof(float) * padding_dim * padding_dim);
+    memset(this->s, 0.0, sizeof(float) * padding_dim * padding_dim);
+
+    this->density =(float*)malloc(sizeof(float) * padding_dim * padding_dim);
+    memset(this->density, 0.0, sizeof(float) * padding_dim * padding_dim);
 }
 
 void Fluid2D::AddDensity(int x, int y, float amount)
@@ -105,7 +110,7 @@ void Fluid2D::printVelocity()
 
 int IX(int i, int j)
 {
-    return i + j*N;
+    return i + j*PAD_N;
 }
 
 void SetBoundaries(int b, float* in_x)
@@ -157,13 +162,44 @@ void Diffuse(int b, float* in_x, float* in_x0, float in_diff, float in_dt)
 void Project(float* in_Vx, float* in_Vy, float* p, float* div)
 {
     for (int j = 1; j < N-1; j++) {
-        for (int i = 1; i < N-1; i++) {
-            div[IX(i, j)] = (-0.5 *
-                            (in_Vx[IX(i+1, j)] -
-                            in_Vx[IX(i-1, j)] +
-                            in_Vy[IX(i, j+1)] -
-                            in_Vy[IX(i, j-1)])) / N;
-            p[IX(i, j)] = 0.0;
+        for (int i = 1; i < floor((N-1)/8); i++) { // Need to break up into segments of 8
+            int iSeg = i*8; //groups of 8
+            // Load in row data of velocities for +1 and -1 i's
+            __m256 Vx_group0 = _mm256_loadu_ps(&in_Vx[IX(iSeg+1, j)]);
+            __m256 Vx_group1 = _mm256_loadu_ps(&in_Vx[IX(iSeg-1, j)]);
+            
+            __m256 Vx_sub = _mm256_sub_ps(Vx_group0, Vx_group1);
+
+            // Can't load in column data directly for +1 and -1 j's
+            __m256 Vy_group0 = _mm256_set_ps(in_Vy[IX(iSeg, j+1)], in_Vy[IX(iSeg+1, j+1)], in_Vy[IX(iSeg+2, j+1)], in_Vy[IX(iSeg+3, j+1)],
+                                            in_Vy[IX(iSeg+4, j+1)], in_Vy[IX(iSeg+5, j+1)], in_Vy[IX(iSeg+6, j+1)], in_Vy[IX(iSeg+7, j+1)]);
+            __m256 Vy_group1 = _mm256_set_ps(in_Vy[IX(iSeg, j-1)], in_Vy[IX(iSeg+1, j-1)], in_Vy[IX(iSeg+2, j-1)], in_Vy[IX(iSeg+3, j-1)],
+                                            in_Vy[IX(iSeg+4, j-1)], in_Vy[IX(iSeg+5, j-1)], in_Vy[IX(iSeg+6, j-1)], in_Vy[IX(iSeg+7, j-1)]);
+
+            __m256 Vy_sub = _mm256_sub_ps(Vy_group0, Vy_group1);
+
+            // Sum together Velocity groups
+            __m256 V_sum = _mm256_add_ps(Vx_sub, Vy_sub);
+            
+            // Scalar multiple of -0.5, Multiply the sums
+            __m256 dupScalar = _mm256_set1_ps((float)-0.5);
+            __m256 V_mult = _mm256_mul_ps(dupScalar, V_sum);
+
+            // Cannot divide with AVX -> Multiply by float
+            dupScalar = _mm256_set1_ps(1.0/((float) N));
+            __m256 V_div = _mm256_mul_ps(dupScalar, V_mult);
+
+            _mm256_storeu_ps(&div[IX(iSeg, j)], V_div);
+
+            //***** Above AVX instructions perform the following operation on 8 elements ***** 
+            // div[IX(i, j)] = (-0.5 *
+            //                 (in_Vx[IX(i+1, j)] -
+            //                 in_Vx[IX(i-1, j)] +
+            //                 in_Vy[IX(i, j+1)] -
+            //                 in_Vy[IX(i, j-1)])) / N;
+
+            V_div = _mm256_setzero_ps();
+            _mm256_storeu_ps(&p[IX(iSeg, j)], V_div);
         }
     }
 
