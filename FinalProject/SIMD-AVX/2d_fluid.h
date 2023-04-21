@@ -8,7 +8,7 @@
     @date 3/30/2023
 */
 
-#define SCALE 2
+#define SCALE 8
 
 #include "p8g.hpp"
 

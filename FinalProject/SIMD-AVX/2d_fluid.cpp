@@ -141,12 +141,13 @@ void LinSolve(int b, float* in_x, float* in_x0, float a, float c)
     for (int t = 0; t < ITR; t++) {
         for (int j = 1; j < N-1; j++) {
             for (int i = 1; i < N-1; i++) {
-                in_x[IX(i, j)] = (in_x0[IX(i, j)] +
-                                a * (in_x[IX(i+1, j)] +
-                                    in_x[IX(i-1, j)] +
-                                    in_x[IX(i, j+1)] +
-                                    in_x[IX(i, j-1)])) * 
-                                cRecip;
+                in_x[IX(i, j)] = (in_x0[IX(i, j)] + a * (in_x[IX(i+1, j)] + in_x[IX(i-1, j)] + in_x[IX(i, j+1)] +in_x[IX(i, j-1)])) * cRecip;
+                // in_x[IX(i, j)] = (in_x0[IX(i, j)] +
+                //                 a * (in_x[IX(i+1, j)] +
+                //                     in_x[IX(i-1, j)] +
+                //                     in_x[IX(i, j+1)] +
+                //                     in_x[IX(i, j-1)])) * 
+                //                 cRecip;
             }
         }
         SetBoundaries(b, in_x);
@@ -162,8 +163,8 @@ void Diffuse(int b, float* in_x, float* in_x0, float in_diff, float in_dt)
 void Project(float* in_Vx, float* in_Vy, float* p, float* div)
 {
     for (int j = 1; j < N-1; j++) {
-        for (int i = 1; i < floor((N-1)/8); i++) { // Need to break up into segments of 8
-            int iSeg = i*8; //groups of 8
+        for (int i = 1; i < floor((N-1)/8); i++) { // Need to break up into segments of 8    floor((N-1)/8)
+            int iSeg = (i-1)*8+1; //groups of 8
             // Load in row data of velocities for +1 and -1 i's
             __m256 Vx_group0 = _mm256_loadu_ps(&in_Vx[IX(iSeg+1, j)]);
             __m256 Vx_group1 = _mm256_loadu_ps(&in_Vx[IX(iSeg-1, j)]);
@@ -191,15 +192,16 @@ void Project(float* in_Vx, float* in_Vy, float* p, float* div)
 
             _mm256_storeu_ps(&div[IX(iSeg, j)], V_div);
 
+            V_div = _mm256_setzero_ps();
+            _mm256_storeu_ps(&p[IX(iSeg, j)], V_div);
+
             //***** Above AVX instructions perform the following operation on 8 elements ***** 
             // div[IX(i, j)] = (-0.5 *
             //                 (in_Vx[IX(i+1, j)] -
             //                 in_Vx[IX(i-1, j)] +
             //                 in_Vy[IX(i, j+1)] -
             //                 in_Vy[IX(i, j-1)])) / N;
-
-            V_div = _mm256_setzero_ps();
-            _mm256_storeu_ps(&p[IX(iSeg, j)], V_div);
+            // p[IX(i, j)] = 0.0;
         }
     }
 
@@ -207,7 +209,6 @@ void Project(float* in_Vx, float* in_Vy, float* p, float* div)
     SetBoundaries(0, p);
     LinSolve(0, p, div, 1, 6);
 
-    #pragma omp parallel loop
     for (int j = 1; j < N-1; j++) {
         for (int i = 1; i < N-1; i++) {
             in_Vx[IX(i, j)] -= 0.5 * (p[IX(i+1, j)] 

@@ -7,7 +7,7 @@
     @date 3/30/2023
 
 	Compilation:
-	g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -O3 -mavx2 -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
+	g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -mavx2 -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
 	
 	Running: ./vis2d.o <matrix-size> <target-fps>
 	./vis2d.o 512 10
@@ -86,13 +86,13 @@ void p8g::draw() {
 		count++;
 	}
 
-	// Compare to Ideal User-Defined FPS, Set ITR (Depth) Accordingly
-	if (calc_fps > fps){
-		ITR++;
-	}
-	else if (ITR > 1){
-		ITR--;
-	}
+	// // Compare to Ideal User-Defined FPS, Set ITR (Depth) Accordingly
+	// if (calc_fps > fps){
+	// 	ITR++;
+	// }
+	// else if (ITR > 1){
+	// 	ITR--;
+	// }
 }
 
 void p8g::keyPressed() {}
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
 	N = size;
 
 	int segment_breakup = 256/(sizeof(float)*8);
-    int PAD_N = ceil((float)N/segment_breakup) * segment_breakup + 8; //adding 8 to PAD for AVX loads/computations
+    PAD_N = ceil((float)N/segment_breakup) * segment_breakup + 8; //adding 8 to PAD for AVX loads/computations
 
 	fps = atoi(argv[2]);
 
