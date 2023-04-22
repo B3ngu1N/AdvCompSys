@@ -1,8 +1,11 @@
 /*
 	2D Fluid Simulation with Navier-Stokes Equations - 2D Visualization
-	using p8g c++ library for 2D rendering.
+	using p8g c++ library for 2D rendering. Obstacle put in path of flow
 	This implementation uses SIMD with AVX and pthreads are used by the p8g library
 	to visualise the 2D simulation with OpenGL.
+
+	Attempt at adding an obstacle into the path of the fluid.
+	Likely going to have issues with boundary problems and AVX.
 
     @author Thomas Petr
     @author Ben Haft
@@ -47,7 +50,7 @@ void p8g::draw() {
 	stroke(52);
 	strokeWeight(2);
 
-	int cx = (int)((0.5 * width) / SCALE);
+	int cx = (int)((0.25 * width) / SCALE);
 	int cy = (int)((0.5 * height) / SCALE);
 	for (int i = -1; i <= 1; i++) {
 		for (int j = -1; j <= 1; j++) {
@@ -55,7 +58,8 @@ void p8g::draw() {
 		}
 	}
 
-    float angle = M_PI * t/180.0;
+    // float angle = M_PI * t/180.0;
+	float angle = 0;
     float xVec = cos(angle) * 0.2;
     float yVec = sin(angle) * 0.2;
     for (int i = -1; i <= 1; i++) {
