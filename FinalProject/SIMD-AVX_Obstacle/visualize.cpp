@@ -50,7 +50,8 @@ void p8g::draw() {
 	stroke(52);
 	strokeWeight(2);
 
-	int cx = (int)((0.25 * width) / SCALE);
+	// Middle Jet Begin
+	int cx = (int)((0.15 * width) / SCALE);
 	int cy = (int)((0.5 * height) / SCALE);
 	for (int i = -1; i <= 1; i++) {
 		for (int j = -1; j <= 1; j++) {
@@ -58,7 +59,6 @@ void p8g::draw() {
 		}
 	}
 
-    // float angle = M_PI * t/180.0;
 	float angle = 0;
     float xVec = cos(angle) * 0.2;
     float yVec = sin(angle) * 0.2;
@@ -67,6 +67,46 @@ void p8g::draw() {
 			fluid->AddVelocity(cx + i, cy + j, xVec, yVec);
 		}
 	}
+	// Middle Jet End
+
+	// Bottom Jet Begin
+	cx = (int)((0.15 * width) / SCALE);
+	cy = (int)((0.35 * height) / SCALE);
+	for (int i = -1; i <= 1; i++) {
+		for (int j = -1; j <= 1; j++) {
+			fluid->AddDensity(cx + i, cy + j, ((rand() / RAND_MAX) * 100.0 + 50));
+		}
+	}
+
+	angle = M_PI/6.0;
+    xVec = cos(angle) * 0.2;
+    yVec = sin(angle) * 0.2;
+    for (int i = -1; i <= 1; i++) {
+		for (int j = -1; j <= 1; j++) {
+			fluid->AddVelocity(cx + i, cy + j, xVec, yVec);
+		}
+	}
+	// Bottom Jet End
+
+	// Top Jet Begin
+	cx = (int)((0.15 * width) / SCALE);
+	cy = (int)((0.65 * height) / SCALE);
+	for (int i = -1; i <= 1; i++) {
+		for (int j = -1; j <= 1; j++) {
+			fluid->AddDensity(cx + i, cy + j, ((rand() / RAND_MAX) * 100.0 + 50));
+		}
+	}
+
+	angle = -M_PI/6.0;
+    xVec = cos(angle) * 0.2;
+    yVec = sin(angle) * 0.2;
+    for (int i = -1; i <= 1; i++) {
+		for (int j = -1; j <= 1; j++) {
+			fluid->AddVelocity(cx + i, cy + j, xVec, yVec);
+		}
+	}
+	// Top Jet End
+
 	clock_t start, end;
     
 	// Timer Start
