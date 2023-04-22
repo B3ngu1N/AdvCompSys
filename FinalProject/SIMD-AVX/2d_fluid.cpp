@@ -138,17 +138,43 @@ void SetBoundaries(int b, float* in_x)
 void LinSolve(int b, float* in_x, float* in_x0, float a, float c)
 {
     float cRecip = 1.0 / c;
+    __m256 a_8x = _mm256_set1_ps(a);
+    __m256 cRecip_8x = _mm256_set1_ps(cRecip);
     for (int t = 0; t < ITR; t++) {
         for (int j = 1; j < N-1; j++) {
-            for (int i = 1; i < N-1; i++) {
-                
+            for (int i = 1; i < (N-1)/8; i++) {
+                int iSeg = (i-1)*8 + 1;
 
-                in_x[IX(i, j)] = (in_x0[IX(i, j)] +
-                                a * (in_x[IX(i+1, j)] +
-                                    in_x[IX(i-1, j)] +
-                                    in_x[IX(i, j+1)] +
-                                    in_x[IX(i, j-1)])) * 
-                                cRecip;
+                // Read in rows of data
+                __m256 mx0 = _mm256_loadu_ps(&in_x0[IX(iSeg, j)]);
+
+                __m256 x_0 = _mm256_loadu_ps(&in_x[IX(iSeg+1, j)]);
+                __m256 x_1 = _mm256_loadu_ps(&in_x[IX(iSeg-1, j)]);
+                __m256 x_2 = _mm256_loadu_ps(&in_x[IX(iSeg, j+1)]);
+                __m256 x_3 = _mm256_loadu_ps(&in_x[IX(iSeg, j-1)]);
+
+                // Sum values of in_x
+                __m256 sum_x = _mm256_add_ps(_mm256_add_ps(x_0, x_1), _mm256_add_ps(x_2, x_3));
+
+                // Multiply by repeated scalar a
+                __m256 mult_x = _mm256_mul_ps(a_8x, sum_x);
+
+                // Add x0
+                sum_x = _mm256_add_ps(mx0, mult_x);
+
+                // Multiply by repeated scalar cRecip
+                mult_x = _mm256_mul_ps(cRecip_8x, sum_x);
+
+                // Store back to memory
+                _mm256_storeu_ps(&in_x[IX(iSeg, j)], mult_x);
+
+                //***** Above AVX instructions perform the following operation on 8 elements *****
+                // in_x[IX(i, j)] = (in_x0[IX(i, j)] +
+                //                 a * (in_x[IX(i+1, j)] +
+                //                     in_x[IX(i-1, j)] +
+                //                     in_x[IX(i, j+1)] +
+                //                     in_x[IX(i, j-1)])) * 
+                //                 cRecip;
             }
         }
         SetBoundaries(b, in_x);
@@ -208,12 +234,32 @@ void Project(float* in_Vx, float* in_Vy, float* p, float* div)
     SetBoundaries(0, p);
     LinSolve(0, p, div, 1, 6);
 
+    __m256 repeat_scalar = _mm256_set1_ps(0.5 * (float)N);
     for (int j = 1; j < N-1; j++) {
-        for (int i = 1; i < N-1; i++) {
-            in_Vx[IX(i, j)] -= 0.5 * (p[IX(i+1, j)] 
-                                    - p[IX(i-1, j)]) * N;
-            in_Vy[IX(i, j)] -= 0.5 * (p[IX(i, j+1)] 
-                                    - p[IX(i, j-1)]) * N;
+        for (int i = 1; i < (N-1)/8; i++) {
+            int iSeg = (i-1)*8 + 1;
+
+            // Load in rows of data
+            __m256 Vx_group = _mm256_loadu_ps(&in_Vx[IX(iSeg, j)]);
+            __m256 Vy_group = _mm256_loadu_ps(&in_Vy[IX(iSeg, j)]);
+
+            __m256 p_i0 = _mm256_loadu_ps(&p[IX(iSeg+1, j)]);
+            __m256 p_i1 = _mm256_loadu_ps(&p[IX(iSeg-1, j)]);
+            __m256 p_j0 = _mm256_loadu_ps(&p[IX(iSeg, j+1)]);
+            __m256 p_j1 = _mm256_loadu_ps(&p[IX(iSeg, j-1)]);
+
+            __m256 Vx_sub = _mm256_mul_ps(repeat_scalar, _mm256_sub_ps(p_i0, p_i1));
+            __m256 Vy_sub = _mm256_mul_ps(repeat_scalar, _mm256_sub_ps(p_j0, p_j1));
+
+            // Store output
+            _mm256_storeu_ps(&in_Vx[IX(iSeg, j)], _mm256_sub_ps(Vx_group, Vx_sub));
+            _mm256_storeu_ps(&in_Vy[IX(iSeg, j)], _mm256_sub_ps(Vy_group, Vy_sub));
+
+            //***** Above AVX instructions perform the following operation on 8 elements *****
+            // in_Vx[IX(i, j)] -= 0.5 * (p[IX(i+1, j)] 
+            //                         - p[IX(i-1, j)]) * N;
+            // in_Vy[IX(i, j)] -= 0.5 * (p[IX(i, j+1)] 
+            //                         - p[IX(i, j-1)]) * N;
         }
     }
 
