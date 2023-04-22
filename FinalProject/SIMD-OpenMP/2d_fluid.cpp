@@ -1,5 +1,5 @@
 /*
-    2D Fluid Simulation with Navier-Stokes Equations - Currently not Multithreaded/SIMD with OpenMP
+    2D Fluid Simulation with Navier-Stokes Equations - SIMD with OpenMP
 
     Credit - Jos Stam & Mike Ash
 

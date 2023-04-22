@@ -1,15 +1,17 @@
 /*
 	2D Fluid Simulation with Navier-Stokes Equations - 2D Visualization
 	using p8g c++ library for 2D rendering.
-	This implementation uses SIMD with AVX and pthreads are used by the p8g library
+	This implementation uses SIMD with AVX+OpenMP and pthreads are used by the p8g library
 	to visualise the 2D simulation with OpenGL.
+
+	Fails to work well because their a fight for threads between OpenMP and p8g pthreads.
 
     @author Thomas Petr
     @author Ben Haft
     @date 4/22/2023
 
 	Compilation:
-	g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -mavx2 -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
+	g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -fopenmp -mavx2 -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
 	
 	Running: ./vis2d.o <matrix-size> <target-fps>
 	./vis2d.o 512 12

@@ -141,6 +141,7 @@ void LinSolve(int b, float* in_x, float* in_x0, float a, float c)
     __m256 a_8x = _mm256_set1_ps(a);
     __m256 cRecip_8x = _mm256_set1_ps(cRecip);
     for (int t = 0; t < ITR; t++) {
+        #pragma omp parallel loop
         for (int j = 1; j < N-1; j++) {
             for (int i = 1; i < (N-1)/8; i++) {
                 int iSeg = (i-1)*8 + 1;
@@ -189,6 +190,7 @@ void Diffuse(int b, float* in_x, float* in_x0, float in_diff, float in_dt)
 
 void Project(float* in_Vx, float* in_Vy, float* p, float* div)
 {
+    #pragma omp parallel loop
     for (int j = 1; j < N-1; j++) {
         for (int i = 1; i < (N-1)/8; i++) { // Need to break up into segments of 8    floor((N-1)/8)
             int iSeg = (i-1)*8+1; //groups of 8
@@ -235,6 +237,7 @@ void Project(float* in_Vx, float* in_Vy, float* p, float* div)
     LinSolve(0, p, div, 1, 6);
 
     __m256 repeat_scalar = _mm256_set1_ps(0.5 * (float)N);
+    #pragma omp parallel loop
     for (int j = 1; j < N-1; j++) {
         for (int i = 1; i < (N-1)/8; i++) {
             int iSeg = (i-1)*8 + 1;
