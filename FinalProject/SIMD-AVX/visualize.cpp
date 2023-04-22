@@ -52,8 +52,11 @@ void p8g::draw() {
 			fluid->AddDensity(cx + i, cy + j, ((rand() / RAND_MAX) * 100.0 + 50));
 		}
 	}
+	// int cx = 2, cy = 2;
+	// fluid->AddDensity(cx, cy, 50);
 
     float angle = M_PI * t/180.0;
+	// float angle = 0;
     float xVec = cos(angle) * 0.2;
     float yVec = sin(angle) * 0.2;
     for (int i = -1; i <= 1; i++) {
@@ -61,6 +64,7 @@ void p8g::draw() {
 			fluid->AddVelocity(cx + i, cy + j, xVec, yVec);
 		}
 	}
+	// fluid->AddVelocity(cx, cy, xVec, yVec);
 	clock_t start, end;
     
 	// Timer Start
@@ -86,13 +90,13 @@ void p8g::draw() {
 		count++;
 	}
 
-	// // Compare to Ideal User-Defined FPS, Set ITR (Depth) Accordingly
-	// if (calc_fps > fps){
-	// 	ITR++;
-	// }
-	// else if (ITR > 1){
-	// 	ITR--;
-	// }
+	// Compare to Ideal User-Defined FPS, Set ITR (Depth) Accordingly
+	if (calc_fps > fps){
+		ITR++;
+	}
+	else if (ITR > 1){
+		ITR--;
+	}
 }
 
 void p8g::keyPressed() {}

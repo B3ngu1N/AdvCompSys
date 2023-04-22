@@ -141,13 +141,14 @@ void LinSolve(int b, float* in_x, float* in_x0, float a, float c)
     for (int t = 0; t < ITR; t++) {
         for (int j = 1; j < N-1; j++) {
             for (int i = 1; i < N-1; i++) {
-                in_x[IX(i, j)] = (in_x0[IX(i, j)] + a * (in_x[IX(i+1, j)] + in_x[IX(i-1, j)] + in_x[IX(i, j+1)] +in_x[IX(i, j-1)])) * cRecip;
-                // in_x[IX(i, j)] = (in_x0[IX(i, j)] +
-                //                 a * (in_x[IX(i+1, j)] +
-                //                     in_x[IX(i-1, j)] +
-                //                     in_x[IX(i, j+1)] +
-                //                     in_x[IX(i, j-1)])) * 
-                //                 cRecip;
+                
+
+                in_x[IX(i, j)] = (in_x0[IX(i, j)] +
+                                a * (in_x[IX(i+1, j)] +
+                                    in_x[IX(i-1, j)] +
+                                    in_x[IX(i, j+1)] +
+                                    in_x[IX(i, j-1)])) * 
+                                cRecip;
             }
         }
         SetBoundaries(b, in_x);
@@ -163,19 +164,17 @@ void Diffuse(int b, float* in_x, float* in_x0, float in_diff, float in_dt)
 void Project(float* in_Vx, float* in_Vy, float* p, float* div)
 {
     for (int j = 1; j < N-1; j++) {
-        for (int i = 1; i < floor((N-1)/8); i++) { // Need to break up into segments of 8    floor((N-1)/8)
+        for (int i = 1; i < (N-1)/8; i++) { // Need to break up into segments of 8    floor((N-1)/8)
             int iSeg = (i-1)*8+1; //groups of 8
-            // Load in row data of velocities for +1 and -1 i's
+            // Load in rows of data of velocities for Vx +1 and -1 i's
             __m256 Vx_group0 = _mm256_loadu_ps(&in_Vx[IX(iSeg+1, j)]);
             __m256 Vx_group1 = _mm256_loadu_ps(&in_Vx[IX(iSeg-1, j)]);
             
             __m256 Vx_sub = _mm256_sub_ps(Vx_group0, Vx_group1);
 
-            // Can't load in column data directly for +1 and -1 j's
-            __m256 Vy_group0 = _mm256_set_ps(in_Vy[IX(iSeg, j+1)], in_Vy[IX(iSeg+1, j+1)], in_Vy[IX(iSeg+2, j+1)], in_Vy[IX(iSeg+3, j+1)],
-                                            in_Vy[IX(iSeg+4, j+1)], in_Vy[IX(iSeg+5, j+1)], in_Vy[IX(iSeg+6, j+1)], in_Vy[IX(iSeg+7, j+1)]);
-            __m256 Vy_group1 = _mm256_set_ps(in_Vy[IX(iSeg, j-1)], in_Vy[IX(iSeg+1, j-1)], in_Vy[IX(iSeg+2, j-1)], in_Vy[IX(iSeg+3, j-1)],
-                                            in_Vy[IX(iSeg+4, j-1)], in_Vy[IX(iSeg+5, j-1)], in_Vy[IX(iSeg+6, j-1)], in_Vy[IX(iSeg+7, j-1)]);
+            // Load in rows of data of velocities for Vy +1 and -1 j's
+            __m256 Vy_group0 = _mm256_loadu_ps(&in_Vy[IX(iSeg, j+1)]);
+            __m256 Vy_group1 = _mm256_loadu_ps(&in_Vy[IX(iSeg, j-1)]);
 
             __m256 Vy_sub = _mm256_sub_ps(Vy_group0, Vy_group1);
 
