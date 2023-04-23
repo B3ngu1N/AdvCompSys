@@ -87,7 +87,7 @@ If we weren't using the p8g visualizer library (and taking advantage of a GPU to
 
 Below is a sample output:
 
-
+![image](https://github.com/B3ngu1N/AdvCompSys/blob/main/FinalProject/Images/sample_output_obstacle.png?raw=true)
 
 **Continuity:**
 
