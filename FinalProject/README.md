@@ -19,6 +19,7 @@
 - cstring
 - immintrin.h
 - omp.h
+- fsteam
 
 ## Navier-Stokes Fluid Equations
 
