@@ -25,7 +25,7 @@
 
 The main Navier-Stokes equations are the theoretical basis for all fluid movement. This includes terms for diffusion and convection. When the diffusion term is greater than the convection term, the fluid tends to flow more smoothly, and when the convection term is greater than the diffusion term, the flow becomes erratic and turbulent. Physicists are currently figuring out how to solve the equation, as while it models fluid movements, there is no way to know exactly what a fluid system will look like after a certain amount of time.
 
-Jos Stam divided the Navier-Stokes equations for two-dimensional fluid simulation. He purposed that one equation models the movement of the velocity field and one the density field. As mass and momentum are both conserved in fluid mechanics. This brings us to our two main equations:
+Jos Stam divided the Navier-Stokes equations for two-dimensional incompressible fluid simulation. He purposed that one equation models the movement of the velocity field and one the density field. As mass and momentum are both conserved in fluid mechanics. This brings us to our two main equations:
 
 ![image](https://user-images.githubusercontent.com/112660711/233766054-5660b673-229f-44c8-9de3-61d6a2df8849.png)
 
