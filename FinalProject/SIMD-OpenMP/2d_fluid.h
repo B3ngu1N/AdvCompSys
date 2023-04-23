@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstring>
 #include <omp.h>
+#include <fstream>
 
 class Fluid2D {
   public:

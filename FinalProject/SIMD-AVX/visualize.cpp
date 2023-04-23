@@ -37,10 +37,7 @@ int fps;
 extern int N;
 extern int PAD_N;
 extern int ITR;
-
-double first10fps[10];
-double first10itr[10];
-int count = 0;
+std::ofstream datafile;
 
 void p8g::draw() {
     colorMode(p8g::HSB);
@@ -81,18 +78,16 @@ void p8g::draw() {
 	// Convert to Calculations per 1 second (Calculated Frames Per Second)
 	double calc_fps = 1.0 / time_taken;
 
-	// Save to Array to Print when Window Closed
-	if (!first10fps[9]){
-		first10fps[count] = calc_fps;
-		first10itr[count] = ITR;
-		count++;
-	}
+	// Save Time Taken, Calculated FPS, and ITR
+	datafile << time_taken << ", "
+	<< calc_fps << ", "
+	<< ITR << std::endl;
 
-	// Compare to Ideal User-Defined FPS, Set ITR (Depth) Accordingly
-	if (calc_fps > fps){
+	// Compare to Ideal User-Defined FPS, Set ITR (Calculation Depth) Accordingly
+	if (calc_fps > fps + 1){
 		ITR++;
 	}
-	else if (ITR > 1){
+	else if (ITR > 1 && calc_fps < fps - 1){
 		ITR--;
 	}
 }
@@ -103,13 +98,6 @@ void p8g::mouseMoved() {}
 void p8g::mousePressed() {}
 void p8g::mouseReleased() {}
 void p8g::mouseWheel(float delta) {}
-
-void printarray(double array[]) {
-    int i;
-    for(i = 0; i < 10; i++) {
-        printf("%.2f\n",array[i]);
-    }
-}
 
 int main(int argc, char** argv) 
 {
@@ -132,10 +120,12 @@ int main(int argc, char** argv)
     fluid = new Fluid2D(N, 0.0, 0.0000001, 0.2);
     t = 0;
 
+	datafile.open("data.csv");
+	datafile << "Time (s), FPS, Depth (ITR)" << std::endl;
+
 	run(600, 600, "2D Fluid Simulation");
 
-	printarray(first10fps);
-	printarray(first10itr);
+	datafile.close();
 
 	return 0;
 }
