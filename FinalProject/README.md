@@ -18,7 +18,7 @@
 - cstring
 - immintrin.h
 - omp.h
-- fsteam
+- fstream
 
 ## Navier-Stokes Fluid Equations
 
@@ -48,6 +48,7 @@ Using C++ library p8g to build 2D visualization of fluid (C++ Version of Process
 
 **SIMD:**
 
+![image](https://github.com/B3ngu1N/AdvCompSys/blob/main/FinalProject/Images/2DFluid_ACS.png?raw=true)
 
 
 **Continuity:**
