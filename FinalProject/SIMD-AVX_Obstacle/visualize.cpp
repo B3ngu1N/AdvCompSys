@@ -7,6 +7,8 @@
 	Attempt at adding an obstacle into the path of the fluid.
 	Likely going to have issues with boundary problems and AVX.
 
+	Only works with 256x256 matrix (because of how box was implemented).
+
     @author Thomas Petr
     @author Ben Haft
     @date 4/22/2023
@@ -15,7 +17,7 @@
 	g++ -std=c++11 visualize.cpp 2d_fluid.cpp -g -mavx2 -L. -lp8g++ -Wl,-rpath=. -o vis2d.o
 	
 	Running: ./vis2d.o <matrix-size> <target-fps>
-	./vis2d.o 512 12
+	./vis2d.o 256 24
 
 	If having troubles with GLX (OpenGL):
 		sudo apt install mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev
@@ -51,7 +53,7 @@ void p8g::draw() {
 	strokeWeight(2);
 	
 	// Middle Jet Begin
-	int cx = (int)((0.22 * width) / SCALE);
+	int cx = (int)((0.25 * width) / SCALE);
 	int cy = (int)((0.5 * height) / SCALE);
 	for (int i = -1; i <= 1; i++) {
 		for (int j = -1; j <= 1; j++) {
@@ -70,7 +72,7 @@ void p8g::draw() {
 	// Middle Jet End
 
 	// Bottom Jet Begin
-	cx = (int)((0.22 * width) / SCALE);
+	cx = (int)((0.25 * width) / SCALE);
 	cy = (int)((0.35 * height) / SCALE);
 	for (int i = -1; i <= 1; i++) {
 		for (int j = -1; j <= 1; j++) {
@@ -89,7 +91,7 @@ void p8g::draw() {
 	// Bottom Jet End
 
 	// Top Jet Begin
-	cx = (int)((0.22 * width) / SCALE);
+	cx = (int)((0.25 * width) / SCALE);
 	cy = (int)((0.65 * height) / SCALE);
 	for (int i = -1; i <= 1; i++) {
 		for (int j = -1; j <= 1; j++) {
