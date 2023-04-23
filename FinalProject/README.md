@@ -36,8 +36,23 @@ Each cell in our simulation is given a velocity and density value of zero (in tw
 
 ## Visualization
 
-Using C++ library p8g to build 2D visualization of fluid (C++ Version of Processing).
+This 2D fluid simulation is using C++ library p8g to build 2D visualization of fluid (C++ Version of Processing). This library is being used in a very simple way to visualize the 2D density array. Besides installing mesa-utils below, on Windows 11 this program should just compile, run, and open its own window. If using Windows 10, you will have to install a separate program for visualizing (see below). If running the SIMD-AVX_Obstacle version, make note that you have to use a 256x256 matrix for it to work properly because the placement of the box is not relative to window size (it's relative to matrix size). Sadly, we have not had time to update this to make it more streamlined (would've also liked to make other shapes).
 
+If having troubles with GLX (OpenGL):
+
+```shell
+sudo apt install mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev
+```
+
+**For Windows 10 (pain):**
+Use VcXsrv/XLaunch to setup OpenGL + Following Commands (see link for more info).
+
+```shell
+export DISPLAY=$(awk '/nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null):0
+export LIBGL_ALWAYS_INDIRECT=0
+```
+
+[Helpful Link for Windows 10](https://gist.github.com/Mluckydwyer/8df7782b1a6a040e5d01305222149f3c)
 
 [p8g GitHub Repository](https://bernhardfritz.github.io/p8g/docs/get-started)
 
@@ -45,7 +60,33 @@ Using C++ library p8g to build 2D visualization of fluid (C++ Version of Process
 
 **SIMD:**
 
+SIMD was implemented using Intel's AVX instructions and takes advantage of the way data is stored in our 2D array. In the naive implementation of the Navier-Stokes equations, it can be seen that there are many nested for loops such as the one below:
+
+```c
+  float cRecip = 1.0 / c;
+  for (int t = 0; t < ITR; t++) {
+      for (int j = 1; j < N-1; j++) {
+          for (int i = 1; i < N-1; i++) {
+              in_x[IX(i, j)] = (in_x0[IX(i, j)] +
+                              a * (in_x[IX(i+1, j)] +
+                                   in_x[IX(i-1, j)] +
+                                   in_x[IX(i, j+1)] +
+                                   in_x[IX(i, j-1)])) * 
+                              cRecip;
+          }
+      }
+      SetBoundaries(b, in_x);
+  }
+```
+
+Given that each computation of each cell relies on the surrounding 4 cells (as seen by the image below), this can easily be broken up into rows of 8 cell computations at a time with Intel AVX instructions (given that each cell holds a FP32 value). Since all of the data is in a row-based matrix loading in the data and storing the data is a simple single operation command (load/store 256 bits from a starting address). This means that we can both reduce operations needed to perform a full matrix computation and also minimize the number of cash misses.
+
 ![image](https://github.com/B3ngu1N/AdvCompSys/blob/main/FinalProject/Images/2DFluid_ACS.png?raw=true)
+
+If we weren't using the p8g visualizer library (and taking advantage of a GPU to visualize) we could combine these AVX instructions with pthreads or OpenMP to break up these matrix computations even further and gain more performance/fps.
+
+Below is a sample output:
+
 
 
 **Continuity:**
