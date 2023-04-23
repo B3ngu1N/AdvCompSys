@@ -20,7 +20,7 @@
 - omp.h
 - fstream
 
-## Navier-Stokes Fluid Equations
+## Navier-Stokes Fluid Equations & Implementation
 
 The main Navier-Stokes equations are the theoretical basis for all fluid movement. This includes terms for diffusion and convection. When the diffusion term is greater than the convection term, the fluid tends to flow more smoothly, and when the convection term is greater than the diffusion term, the flow becomes erratic and turbulent. Physicists are currently figuring out how to solve the equation, as while it models fluid movements, there is no way to know exactly what a fluid system will look like after a certain amount of time.
 
@@ -33,9 +33,6 @@ The first equation is: the partial derivative of velocity is equal to the convec
 The second equation is: the partial derivative of density is equal to the convection, diffusion, and its initial value
 
 Each cell in our simulation is given a velocity and density value of zero (in two discrete arrays) when the simulation begins. Calculations are completed in matrices of all velocity and density values around the current cell. They first satisfy the second term in the equations above (diffusion); this is an iterative process where the fluid gets closer to the real value upon each iteration. Then, the program applies the velocity field to the density field to calculate the movement of the density field. The visualization is the density field. This is a basic definition and can be expanded upon more beginning on page 8 in Michael Ash's thesis paper: [Simulation and Visualization of a 3D Fluid](https://github.com/B3ngu1N/AdvCompSys/blob/main/FinalProject/Final_Project_Papers/thesis-en.pdf)
-
-## Fluid Simulation Implementation
-
 
 ## Visualization
 
