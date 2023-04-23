@@ -84,6 +84,22 @@ void Fluid2D::RenderDensity()
             p8g::rect(x, y, SCALE, SCALE);
         }
     }
+
+    //add box visual
+	int box_center = (N-1)/2+24;
+	int box_min_edge = box_center - 5;
+	int box_max_edge = box_center + 5;
+
+	// colorMode(p8g::HSB);
+	for(int j = box_min_edge; j < box_max_edge; ++j){
+		for(int i = box_min_edge; i < box_max_edge; ++i){
+			int x = i * SCALE;
+			int y = j * SCALE;
+			p8g::fill(50, 0, 100);
+			p8g::noStroke();
+			p8g::rect(x, y, SCALE, SCALE);
+		}
+	}
 }
 
 void Fluid2D::printDensity()
@@ -133,6 +149,33 @@ void SetBoundaries(int b, float* in_x)
                             + in_x[IX(N-1, 1)]);
     in_x[IX(N-1, N-1)] = 0.5 * (in_x[IX(N-2, N-1)] 
                             + in_x[IX(N-1, N-2)]);
+
+    // Create a box to interact with
+
+    int box_center = (N-1)/2 + 24;
+    int box_min_edge = box_center - 5;
+    int box_max_edge = box_center + 5;
+
+    for (int i = box_min_edge+1; i < box_max_edge; i++) {
+        in_x[IX(i, box_min_edge)] = b == 2 ? -in_x[IX(i, box_min_edge+1)] : in_x[IX(i, box_min_edge+1)];
+        in_x[IX(i, box_max_edge)] = b == 2 ? -in_x[IX(i, box_max_edge-1)] : in_x[IX(i, box_max_edge-1)];
+    }
+
+    for (int j = box_min_edge+1; j < box_max_edge; j++) {
+        in_x[IX(box_min_edge, j)] = b == 1 ? -in_x[IX(box_min_edge+1, j)] : in_x[IX(box_min_edge+1, j)];
+        in_x[IX(box_max_edge, j)] = b == 1 ? -in_x[IX(box_max_edge-1, j)] : in_x[IX(box_max_edge-1, j)];
+    }
+
+    in_x[IX(box_min_edge, box_min_edge)] = 0.5 * (in_x[IX(box_min_edge+1, box_min_edge)] 
+                                                + in_x[IX(box_min_edge, box_min_edge+1)]);
+    in_x[IX(box_min_edge, box_max_edge)] = 0.5 * (in_x[IX(box_min_edge+1, box_max_edge)] 
+                                                + in_x[IX(box_min_edge, box_max_edge-1)]);
+    in_x[IX(box_max_edge, box_min_edge)] = 0.5 * (in_x[IX(box_max_edge-1, box_min_edge)] 
+                                                + in_x[IX(box_max_edge, box_min_edge+1)]);
+    in_x[IX(box_max_edge, box_max_edge)] = 0.5 * (in_x[IX(box_max_edge-1, box_max_edge)] 
+                                                + in_x[IX(box_max_edge, box_max_edge-1)]);
+
+
 }
 
 void LinSolve(int b, float* in_x, float* in_x0, float a, float c)

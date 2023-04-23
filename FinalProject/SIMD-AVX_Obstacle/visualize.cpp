@@ -49,9 +49,9 @@ void p8g::draw() {
     colorMode(p8g::HSB);
 	stroke(52);
 	strokeWeight(2);
-
+	
 	// Middle Jet Begin
-	int cx = (int)((0.15 * width) / SCALE);
+	int cx = (int)((0.22 * width) / SCALE);
 	int cy = (int)((0.5 * height) / SCALE);
 	for (int i = -1; i <= 1; i++) {
 		for (int j = -1; j <= 1; j++) {
@@ -70,7 +70,7 @@ void p8g::draw() {
 	// Middle Jet End
 
 	// Bottom Jet Begin
-	cx = (int)((0.15 * width) / SCALE);
+	cx = (int)((0.22 * width) / SCALE);
 	cy = (int)((0.35 * height) / SCALE);
 	for (int i = -1; i <= 1; i++) {
 		for (int j = -1; j <= 1; j++) {
@@ -89,7 +89,7 @@ void p8g::draw() {
 	// Bottom Jet End
 
 	// Top Jet Begin
-	cx = (int)((0.15 * width) / SCALE);
+	cx = (int)((0.22 * width) / SCALE);
 	cy = (int)((0.65 * height) / SCALE);
 	for (int i = -1; i <= 1; i++) {
 		for (int j = -1; j <= 1; j++) {
@@ -114,7 +114,6 @@ void p8g::draw() {
 
 	fluid->SimStep();
     fluid->RenderDensity();
-    t += 1;
 
 	// Timer End
     end = clock();
