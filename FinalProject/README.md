@@ -80,7 +80,7 @@ SIMD was implemented using Intel's AVX instructions and takes advantage of the w
   }
 ```
 
-Given that each computation of each cell relies on the surrounding 4 cells (as seen by the image below), this can easily be broken up into rows of 8 cell computations at a time with Intel AVX instructions (given that each cell holds a FP32 value). Since all of the data is in a row-based matrix loading in the data and storing the data is a simple single operation command (load/store 256 bits from a starting address). This means that we can both reduce operations needed to perform a full matrix computation and also minimize the number of cash misses.
+Given that the computation of each cell relies on the surrounding 4 cells (as seen by the image below), this can easily be broken up into rows of 8 cell computations at a time with Intel AVX instructions (given that each cell holds a FP32 value). Since all of the data is in a row-based matrix loading in the data and storing the data is a simple single operation command (load/store 256 bits from a starting address). This means that we can both reduce operations needed to perform a full matrix computation and also minimize the number of cash misses.
 
 ![image](https://github.com/B3ngu1N/AdvCompSys/blob/main/FinalProject/Images/2DFluid_ACS.png?raw=true)
 
