@@ -19,6 +19,7 @@
 - immintrin.h
 - omp.h
 - fstream
+- p8g.hpp (Visualizer)
 
 ## Navier-Stokes Fluid Equations & Implementation
 
