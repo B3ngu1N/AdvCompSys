@@ -90,12 +90,12 @@ void Fluid2D::RenderDensity()
 	int box_min_edge = box_center - 5;
 	int box_max_edge = box_center + 5;
 
-	// colorMode(p8g::HSB);
+	p8g::colorMode(p8g::RGB);
 	for(int j = box_min_edge; j < box_max_edge; ++j){
 		for(int i = box_min_edge; i < box_max_edge; ++i){
 			int x = i * SCALE;
 			int y = j * SCALE;
-			p8g::fill(50, 0, 100);
+			p8g::fill(200, 0, 0);
 			p8g::noStroke();
 			p8g::rect(x, y, SCALE, SCALE);
 		}
