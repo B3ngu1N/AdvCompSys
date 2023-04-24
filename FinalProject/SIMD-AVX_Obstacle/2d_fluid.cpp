@@ -79,7 +79,7 @@ void Fluid2D::RenderDensity()
             int x = i * SCALE;
             int y = j * SCALE;
             float d = this->density[IX(i, j)];
-            p8g::fill(((int)d+50)%255, 0, (int)d); //x, 220, (int)d
+            p8g::fill(((int)d)%255, 0, (int)d); //x, 220, (int)d
             p8g::noStroke();
             p8g::rect(x, y, SCALE, SCALE);
         }
@@ -88,7 +88,7 @@ void Fluid2D::RenderDensity()
     //add box visual
 	int box_center = (N-1)/2+24;
 	int box_min_edge = box_center - 5;
-	int box_max_edge = box_center + 5;
+	int box_max_edge = box_center + 6;
 
 	p8g::colorMode(p8g::RGB);
 	for(int j = box_min_edge; j < box_max_edge; ++j){

@@ -48,9 +48,9 @@ double first10itr[10];
 int count = 0;
 
 void p8g::draw() {
-    colorMode(p8g::HSB);
-	stroke(52);
-	strokeWeight(2);
+    colorMode(p8g::RGB);
+	stroke(2);
+	strokeWeight(1);
 	
 	// Middle Jet Begin
 	int cx = (int)((0.25 * width) / SCALE);
